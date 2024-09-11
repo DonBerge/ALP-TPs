@@ -1,0 +1,298 @@
+\documentclass[12pt, titlepage]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{prftree}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{enumitem} 
+
+\usepackage[spanish]{babel}
+\usepackage{amsthm}
+\usepackage{bussproofs}
+\usepackage{bm}
+
+\renewcommand{\skip}{\textbf{skip}}
+\newcommand{\true}{\textbf{true}}
+\newcommand{\false}{\textbf{false}}
+\newcommand{\until}{\textbf{until}}
+
+\newcommand{\lbangle}{\bm{\langle}}
+\newcommand{\rbangle}{\bm{\rangle}}
+\newcommand{\deriva}{\rightsquigarrow}
+\newcommand{\bexp}{\Downarrow_{exp}}
+\newcommand{\pp}{\texttt{++}}
+\newcommand{\mm}{\texttt{--}}
+
+\title{Trabajo Práctico 1\\ 
+Análisis de Lenguajes de Programación}
+\author{Agustin Fernandez y Ramiro Gatto}
+\date{17/9/2024}
+
+\begin{document}
+\maketitle
+
+\section{Ejercicio 1}
+Para este ejercicio lo que se hizo fue modificar parte de las sintaxis 
+abstracta y concreta, las partes que se modificaron fueron unicamente el 
+intexp en ambos, quedando.\\
+
+\noindent \textbf{Sintaxis Abstracta}
+
+$intexp ::= nat \: | \: var | \: -_u intexp$
+
+\hspace{1.5cm}$|\: intexp +intexp$
+
+\hspace{1.5cm}$|\: var \mathrel{+{+}}$
+
+\hspace{1.5cm}$|\: var \mathrel{-{-}}$
+
+\hspace{1.5cm}$|\: intexp -_b intexp$
+
+\hspace{1.5cm}$|\: intexp \times intexp$
+
+\hspace{1.5cm}$|\: intexp \div  intexp $\\
+
+\noindent \textbf{Sintaxis Concreta}
+
+$intexp ::= nat \:|\: var$
+
+\hspace{1.5cm}$|\: var $ '$++$'
+
+\hspace{1.5cm}$|\: var $ '$--$'
+
+\hspace{1.5cm}$|\: var$
+
+\hspace{1.5cm}$|\:$ '$-$' $intexp$
+
+\hspace{1.5cm}$|\: intexp$ '$+$' $intexp$
+
+\hspace{1.5cm}$|\: intexp$ '$-$' $intexp$
+
+\hspace{1.5cm}$|\: intexp$ '$*$' $intexp$
+
+\hspace{1.5cm}$|\: intexp$ '$/$' $intexp$
+
+\hspace{1.5cm}$|\: $'('$ intexp $')'
+
+
+\section{Ejercicio 4}
+\begin{displaymath}   
+    \prftree[r]{VarInc}{x \in \operatorname{dom} \sigma} {\langle x \pp,\sigma \rangle \Downarrow_{exp} \langle \sigma x \bm{+} \bm{1}, [\sigma| x : \sigma x \bm{+} \bm{1}] \rangle}
+\end{displaymath}
+
+\begin{displaymath}   
+    \prftree[r]{VarDec}{x \in \operatorname{dom} \sigma} {\langle x \mm,\sigma \rangle \Downarrow_{exp} \langle \sigma x \bm{-} \bm{1}, [\sigma| x : \sigma x \bm{-} \bm{1}] \rangle}
+\end{displaymath}
+
+
+\section{Ejercicio 5}
+Probamos que la relación $\leadsto$ es determinista, para ello usamos Inducción en la derivación t $\leadsto$ t'.\\
+Se tiene que la propiedad a probar seria:  
+
+\begin{equation*}
+\begin{aligned}
+    t \leadsto t'\\
+    t \leadsto t''
+\end{aligned}
+\quad \Rightarrow \quad
+\begin{aligned}
+    t' = t''
+\end{aligned}
+\end{equation*}
+
+
+\begin{itemize}[label=$\bullet$]
+
+\item {Caso Base (Ultima regla utilizada Ass)}
+    \\Sabemos que:
+    \begin{itemize}[label=$\bullet$]
+        \item {$\langle e, \sigma \rangle \Downarrow_{exp} \langle n, \sigma' \rangle$}
+        \item {$t = \langle v=e, \sigma \rangle$}
+        \item {$t' = \langle \skip, [\sigma' | v : n] \rangle$}
+    \end{itemize}
+    Entonces como solo se le puede aplicar a $t$ Ass y por ser $\Downarrow_{exp}$ determinista se tiene
+    que $t' = t''$
+
+\item {Caso Base (Ultima regla utilizada Seq1)}
+    \\Sabemos que:
+    \begin{itemize}[label=$\bullet$]
+        \item {$t = \langle c_0;c_1, \sigma \rangle$}
+        \item {$t' = \langle c_0';c_1, \sigma  \rangle$}
+    \end{itemize}
+    Entonces solo se pueden usar dos reglas, Seq1 y Seq2; pero para poder usar
+    Seq2 debe haber regla que verifique: $\langle Skip,\sigma \rangle \leadsto \langle C_0',\sigma' \rangle$.\\
+    Pero dicha regla no existe, lo que implica que solo se puede aplicar Seq1\\
+    $\therefore$ Como $\Downarrow_{exp} $ determinista, $t' = t''$
+
+\item {Caso Base (Ultima regla utilizada If1)}
+    \\Sabemos que:
+    \begin{itemize}[label=$\bullet$]
+        \item {$\langle b, \sigma \rangle \Downarrow_{exp} \langle \true, \sigma' \rangle$}
+        \item {$t = \langle \textbf{if} \:b \:\textbf{then} \:c_0 \:\textbf{else} \:c_1, \sigma \rangle$}
+        \item {$t' = \langle c_0, \sigma  \rangle$}
+    \end{itemize}
+    Entonces solo se pude usar dos reglas para obtener $t''$, If1 e If2; pero si se usara If2
+    se tendría que: $\langle b, \sigma \rangle \Downarrow_{exp} \langle \false, \sigma' \rangle$.
+    Pero esto contradecir que $\Downarrow_{exp}$ determinista.
+    \\Por lo tanto solo se pudo haber usado If1, pero como $\Downarrow_{exp}$ determinista se tiene que
+    $t' = t''$     
+         
+\item {Caso Base (Ultima regla utilizada If2)}
+    \\Análogo al caso If1
+
+\item {Caso Base (Ultima regla utilizada Repeat)}
+    \\Sabemos que:
+    \begin{itemize}[label=$\bullet$]
+        \item {$t = \langle \textbf{repeat} \:c \:\until \:b, \sigma \rangle$}
+        \item {$t' = \langle c; \textbf{if} \:b \:\textbf{then} \:\skip \:\textbf{else} \:\textbf{repeat} \:c \:\until \:b, \sigma\rangle$}
+    \end{itemize}
+    Tenemos que solo se pude aplicar una regla a t, la cual es repeat
+    \\$\therefore$ Se concluye que $t'= t''$
+
+\item {Caso Inductivo (Ultima regla utilizada Seq2)}
+    \\Sabemos que:
+    \begin{itemize}[label=$\bullet$]
+        \item {$\langle c_0, \sigma \rangle \leadsto \langle c_0', \sigma \rangle$}
+        \item {$t = \langle c_0;c_1, \sigma \rangle $}
+        \item {$t' = \langle c_0';c_1, \sigma  \rangle$}
+    \end{itemize}
+
+    Tenemos entonces dos casos posibles
+    \begin{itemize}[label=$\bullet$]
+        \item {Se utilizo Seq1}
+            \begin{itemize}[label=$\bullet$]
+                \item {$t'' =\langle c_1, \sigma \rangle$}
+                \item {$t = \langle \skip, \sigma \rangle$}
+            \end{itemize}
+                Pero esto seria un absurdo, ya que se tendría que t tiene dos formas distintas.
+                $\therefore Abs!!!$
+
+        \item {Se utilizo Seq2}
+            \begin{itemize}[label=$\bullet$]
+                \item {$t'' =\langle k_0;c_1, \sigma'' \rangle$}
+            \end{itemize}
+            Por la por la forma de Seq2 se tiene que
+            \\$\langle c_0, \sigma \rangle \leadsto \langle k_0, \sigma'' \rangle$
+            \\Luego por la HI se tiene,
+            $\langle c_0, \sigma' \rangle = \langle k_0, \sigma'' \rangle$
+            \\$\therefore t'=t''$
+    \end{itemize}
+\end{itemize}
+
+
+\section{Ejercicio 6}
+
+Quiero probar que estos programas son semánticamente equivalentes:
+
+\ 
+
+\begin{minipage}{0.45\textwidth}
+\begin{flushleft}
+a) \\
+\texttt{x=x+1} \\
+\texttt{y=x}
+\end{flushleft}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+\begin{flushleft}
+b) \\
+\texttt{y=x++}
+\end{flushleft}
+\end{minipage}
+
+\ 
+
+Se asume que $\sigma$ es un estado tal que $x \in \operatorname{dom} \sigma$.
+
+\ 
+
+a)
+
+\begin{prooftree}
+    \AxiomC{$x \in \operatorname{dom} \sigma$}
+    \RightLabel{V\scriptsize{AR}}
+    \UnaryInfC{$\lbangle x, \sigma \rbangle \bexp \lbangle \sigma \  x, \sigma \rbangle$}
+    \AxiomC{}
+    \RightLabel{NV\scriptsize{AL}}
+    \UnaryInfC{$\lbangle 1, \sigma \rbangle \bexp \lbangle \bm{1}, \sigma \rbangle$}
+    \RightLabel{P\scriptsize{LUS}}
+    \BinaryInfC{$\lbangle x+1, \sigma \rbangle \bexp \lbangle \sigma \ x \bm{+} \bm{1}, \sigma \rbangle$}
+    \RightLabel{A\scriptsize{SS}}
+    \UnaryInfC{$\lbangle x=x+1 , \sigma \rbangle \deriva \lbangle \skip, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle$}
+    
+    \RightLabel{S\scriptsize{EQ\tiny 2}}
+    \UnaryInfC{$\lbangle x=x+1;y=x, \sigma \rbangle \deriva \lbangle \skip;y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{}
+    \RightLabel{S\scriptsize{EQ\tiny 1}}
+    \UnaryInfC{$\lbangle \skip;y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle \deriva \lbangle y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$x \in \operatorname{dom} x$}
+    \RightLabel{Def $[\sigma | v:e]$}
+    \UnaryInfC{$x \in \operatorname{dom} [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]$}
+    \RightLabel{V\scriptsize{AR}}
+    \UnaryInfC{$\lbangle x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]\rbangle \bexp \lbangle \sigma x \bm{+} \bm{1}, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]\rbangle$}
+    \RightLabel{A\scriptsize{SS}}
+    \UnaryInfC{$\lbangle y = x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]\rbangle \deriva \lbangle \skip, [\sigma \ | \  y: \sigma \  x \bm{+} \bm{1}, x:\sigma \  x \bm{+} \bm{1}]\rbangle$}
+\end{prooftree}
+
+\ 
+
+Se tiene entonces que:
+
+$\lbangle x=x+1;y=x, \sigma \rbangle$ 
+
+$\deriva$
+
+$\lbangle \skip;y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle$
+
+$\deriva$
+
+$\lbangle y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]$
+
+$\deriva$
+
+$\lbangle \skip, [\sigma \ | \  y: \sigma \  x \bm{+} \bm{1}, x:\sigma \  x \bm{+} \bm{1}]\rbangle$
+
+\ 
+
+Por lo tanto: $\lbangle x=x+1;y=x, \sigma \rbangle \deriva^{*} \lbangle \skip, [\sigma \ | \  y: \sigma \  x \bm{+} \bm{1}, x:\sigma \  x \bm{+} \bm{1}]\rbangle$
+
+\ 
+
+b)
+
+Se tiene la siguiente derivación para $\pp$
+
+\begin{prooftree}
+    \AxiomC{$x \in \operatorname{dom} \sigma$}
+    \RightLabel{V\scriptsize{AR}\small{I}\scriptsize{NC}}
+    \UnaryInfC{$\lbangle x\pp, \sigma \rbangle \bexp \lbangle \sigma \ x\bm{+}\bm{1}, [\sigma \ | \ x:\sigma \ x \bm{+} \bm{1}] \rbangle$}
+\end{prooftree}
+
+Por lo tanto:
+\begin{prooftree}
+    
+    \AxiomC{$x \in \operatorname{dom} \sigma$}
+    \RightLabel{V\scriptsize{AR}\small{I}\scriptsize{NC}}
+    \UnaryInfC{$\lbangle x\pp, \sigma \rbangle \bexp \lbangle \sigma \ x\bm{+}\bm{1}, [\sigma \ | \ x:\sigma \ x \bm{+} \bm{1}] \rbangle$}
+    \RightLabel{A\scriptsize{SS}}
+    \UnaryInfC{$\lbangle y=x\pp, \sigma \rbangle \deriva \lbangle \skip, [\sigma \ | \ y: \sigma \ x \bm{+} \bm{1}, \: x:\sigma \ x \bm{+} \bm{1}] \rbangle$}
+\end{prooftree}
+
+Como
+
+$\lbangle x=x+1;y=x, \sigma \rbangle \deriva^{*} \lbangle \skip, [\sigma \ | \  y: \sigma \  x \bm{+} \bm{1}, x:\sigma \  x \bm{+} \bm{1}]\rbangle$
+
+\hspace{0.5cm}y
+
+$\lbangle y=x\pp, \sigma \rbangle \deriva^{*} \lbangle \skip, [\sigma \ | \ y: \sigma \ x \bm{+} \bm{1}, \: x:\sigma \ x \bm{+} \bm{1}] \rbangle$
+
+Se tiene que ambos programas son semánticamente equivalentes.
+
+
+
+\end{document}
