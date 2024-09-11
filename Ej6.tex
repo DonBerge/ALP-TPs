@@ -1,0 +1,131 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[spanish]{babel}
+\usepackage{amsthm}
+\usepackage{bussproofs}
+\usepackage{bm}
+
+\renewcommand{\skip}{\textbf{skip}}
+\newcommand{\lbangle}{\bm{\langle}}
+\newcommand{\rbangle}{\bm{\rangle}}
+\newcommand{\deriva}{\rightsquigarrow}
+\newcommand{\bexp}{\Downarrow_{exp}}
+\newcommand{\pp}{\texttt{++}}
+\newcommand{\mm}{\texttt{--}}
+
+\begin{document}
+
+Quiero probar que estos programas son semánticamente equivalentes:
+
+\ 
+
+\begin{minipage}{0.45\textwidth}
+\begin{flushleft}
+a) \\
+\texttt{x=x+1} \\
+\texttt{y=x}
+\end{flushleft}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+\begin{flushleft}
+b) \\
+\texttt{y=x++}
+\end{flushleft}
+\end{minipage}
+
+\ 
+
+Se asume que $\sigma$ es un estado tal que $x \in \operatorname{dom} \sigma$.
+
+\ 
+
+a)
+
+\begin{prooftree}
+    \AxiomC{$x \in \operatorname{dom} \sigma$}
+    \RightLabel{V\scriptsize{AR}}
+    \UnaryInfC{$\lbangle x, \sigma \rbangle \bexp \lbangle \sigma \  x, \sigma \rbangle$}
+    \AxiomC{}
+    \RightLabel{NV\scriptsize{AL}}
+    \UnaryInfC{$\lbangle 1, \sigma \rbangle \bexp \lbangle \bm{1}, \sigma \rbangle$}
+    \RightLabel{P\scriptsize{LUS}}
+    \BinaryInfC{$\lbangle x+1, \sigma \rbangle \bexp \lbangle \sigma \ x \bm{+} \bm{1}, \sigma \rbangle$}
+    \RightLabel{A\scriptsize{SS}}
+    \UnaryInfC{$\lbangle x=x+1 , \sigma \rbangle \deriva \lbangle \skip, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle$}
+    
+    \RightLabel{S\scriptsize{EQ\tiny 2}}
+    \UnaryInfC{$\lbangle x=x+1;y=x, \sigma \rbangle \deriva \lbangle \skip;y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{}
+    \RightLabel{S\scriptsize{EQ\tiny 1}}
+    \UnaryInfC{$\lbangle \skip;y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle \deriva \lbangle y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$x \in \operatorname{dom} x$}
+    \RightLabel{Def $[\sigma | v:e]$}
+    \UnaryInfC{$x \in \operatorname{dom} [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]$}
+    \RightLabel{V\scriptsize{AR}}
+    \UnaryInfC{$\lbangle x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]\rbangle \bexp \lbangle \sigma x \bm{+} \bm{1}, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]\rbangle$}
+    \RightLabel{A\scriptsize{SS}}
+    \UnaryInfC{$\lbangle y = x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]\rbangle \deriva \lbangle \skip, [\sigma \ | \  y: \sigma \  x \bm{+} \bm{1}, x:\sigma \  x \bm{+} \bm{1}]\rbangle$}
+\end{prooftree}
+
+\ 
+
+Se tiene entonces que:
+
+$\lbangle x=x+1;y=x, \sigma \rbangle$ 
+
+$\deriva$
+
+$\lbangle \skip;y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}] \rbangle$
+
+$\deriva$
+
+$\lbangle y=x, [\sigma \ | \  x:\sigma \  x \bm{+} \bm{1}]$
+
+$\deriva$
+
+$\lbangle \skip, [\sigma \ | \  y: \sigma \  x \bm{+} \bm{1}, x:\sigma \  x \bm{+} \bm{1}]\rbangle$
+
+\ 
+
+Por lo tanto: $\lbangle x=x+1;y=x, \sigma \rbangle \deriva^{*} \lbangle \skip, [\sigma \ | \  y: \sigma \  x \bm{+} \bm{1}, x:\sigma \  x \bm{+} \bm{1}]\rbangle$
+
+\ 
+
+b)
+
+Se tiene la siguiente derivación para $\pp$
+
+\begin{prooftree}
+    \AxiomC{$x \in \operatorname{dom} \sigma$}
+    \RightLabel{V\scriptsize{AR}\small{I}\scriptsize{NC}}
+    \UnaryInfC{$\lbangle x\pp, \sigma \rbangle \bexp \lbangle \sigma \ x\bm{+}\bm{1}, [\sigma \ | \ x:\sigma \ x \bm{+} \bm{1}] \rbangle$}
+\end{prooftree}
+
+Por lo tanto:
+\begin{prooftree}
+    
+    \AxiomC{$x \in \operatorname{dom} \sigma$}
+    \RightLabel{V\scriptsize{AR}\small{I}\scriptsize{NC}}
+    \UnaryInfC{$\lbangle x\pp, \sigma \rbangle \bexp \lbangle \sigma \ x\bm{+}\bm{1}, [\sigma \ | \ x:\sigma \ x \bm{+} \bm{1}] \rbangle$}
+    \RightLabel{A\scriptsize{SS}}
+    \UnaryInfC{$\lbangle y=x\pp, \sigma \rbangle \deriva \lbangle \skip, [\sigma \ | \ y: \sigma \ x \bm{+} \bm{1}, \: x:\sigma \ x \bm{+} \bm{1}] \rbangle$}
+\end{prooftree}
+
+Como
+
+$\lbangle x=x+1;y=x, \sigma \rbangle \deriva^{*} \lbangle \skip, [\sigma \ | \  y: \sigma \  x \bm{+} \bm{1}, x:\sigma \  x \bm{+} \bm{1}]\rbangle$
+
+\hspace{0.5cm}y
+
+$\lbangle y=x\pp, \sigma \rbangle \deriva^{*} \lbangle \skip, [\sigma \ | \ y: \sigma \ x \bm{+} \bm{1}, \: x:\sigma \ x \bm{+} \bm{1}] \rbangle$
+
+Se tiene que ambos programas son semánticamente equivalentes.
+
+\end{document}
