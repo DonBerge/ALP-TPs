@@ -50,18 +50,21 @@ lis = makeTokenParser
 -----------------------------------
 --- Parser de expresiones enteras
 -----------------------------------
+arithOp :: Parser (Exp Int -> Exp Int -> Exp Int)
+arithOp = reservedOp lis "*" *> return Times
+          <|> reservedOp lis "/" *>  return Div
+          <|> reservedOp lis "+" *> return Plus
+          <|> reservedOp lis "-" *> return Minus
+
 intexp :: Parser (Exp Int)
-intexp = (do chainl1 intexp' (try (do reservedOp lis "+"; return (Plus))
-                              <|> try (do _ <- reservedOp lis "-"; return (Minus))
-                              <|> try (do reservedOp lis "*"; return (Times))
-                              <|> try (do reservedOp lis "/";  return (Div))))
+intexp = intexp' `chainl1` arithOp
 
 
 intexp' :: Parser (Exp Int)
-intexp' = try (do v <- identifier lis; (try (do reservedOp lis "++"; return (VarInc v))
-                                        <|> try (do reservedOp lis "--"; return (VarDec v)))
+intexp' = try (do v <- identifier lis; (try (reservedOp lis "++" *> return (VarInc v))
+                                        <|> try (reservedOp lis "--" *> return (VarDec v)))
                                         <|> return (Var v))
-          <|> try (do i <- natural lis; return (Const (fromIntegral i)))
+          <|> try ((Const . fromIntegral) <$> natural lis)
           <|> try (do reservedOp lis "-"; e <- intexp; return (UMinus e))
           <|> braces lis intexp
 
