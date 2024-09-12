@@ -60,13 +60,15 @@ intexp :: Parser (Exp Int)
 intexp = intexp' `chainl1` arithOp
 
 
+-- fun <%> p , aplica fun al resultado del parser p
+-- p *> q, ejecuta el parser p y luego ejecuta el parser q 
 intexp' :: Parser (Exp Int)
-intexp' = try (do v <- identifier lis; (try (reservedOp lis "++" *> return (VarInc v))
-                                        <|> try (reservedOp lis "--" *> return (VarDec v)))
+intexp' = try (do v <- identifier lis; ((reservedOp lis "++" *> return (VarInc v))
+                                        <|> (reservedOp lis "--" *> return (VarDec v)))
                                         <|> return (Var v))
-          <|> try ((Const . fromIntegral) <$> natural lis)
-          <|> try (do reservedOp lis "-"; e <- intexp; return (UMinus e))
-          <|> braces lis intexp
+          <|> ((Const . fromIntegral) <$> natural lis)
+          <|> (do reservedOp lis "-"; e <- intexp; return (UMinus e))
+          <|> parens lis intexp
 
 ------------------------------------
 --- Parser de expresiones booleanas
@@ -78,7 +80,7 @@ boolexp = (do chainl1 boolexp' (try (do reservedOp lis "&&"; return (And))
 boolexp' :: Parser (Exp Bool)
 boolexp' = try (do reserved lis "true"; return (BTrue))
           <|> try (do reserved lis "false"; return (BTrue))
-          <|> braces lis boolexp
+          <|> parens lis boolexp
           <|> try (do reservedOp lis "!"; b <- boolexp; return (Not b))
           <|> try (do b1 <- intexp; reservedOp lis "=="; b2 <- intexp; return (Eq b1 b2))
           <|> try (do b1 <- intexp; reservedOp lis "!="; b2 <- intexp; return (NEq b1 b2))
