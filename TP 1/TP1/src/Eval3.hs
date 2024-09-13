@@ -8,6 +8,7 @@ import Prelude hiding (uncurry)
 import           AST
 import qualified Data.Map.Strict               as M
 import           Data.Strict.Tuple
+import Data.List (intercalate)
 
 -- Estados 
 type State = (M.Map Variable Int, String)
@@ -55,7 +56,7 @@ stepCommStar c    s = do
 stepComm :: Comm -> State -> Either Error (Pair Comm State)
 stepComm (Let v e) (st, s) = case evalExp e (st, s) of
                                       Left e -> Left e
-                                      Right (e':!: s') -> Right $ pair Skip $ (addTrace ("Let "++ v ++ " " ++ (show e') ++ ", ") (uncurry (update v) $ (e':!: s') )) 
+                                      Right (e':!: s') -> Right $ pair Skip $ (addTrace (intercalate " " ["Let", v, (show e'), ", "]) (uncurry (update v) $ (e':!: s') )) 
 
 stepComm (Seq Skip c1) st = stepComm c1 st
 stepComm (Seq c0 c1) st = case stepComm c0 st of
