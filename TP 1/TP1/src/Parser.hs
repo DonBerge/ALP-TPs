@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# HLINT ignore "Use <$>" #-}
+{-# HLINT ignore "Use $>" #-}
 module Parser where
 
 import           Text.ParserCombinators.Parsec
 import           Text.Parsec.Token
 import           Text.Parsec.Language           ( emptyDef )
 import           AST
-import GHC.Num (integerToInt)
 
 -----------------------
 -- Función para facilitar el testing del parser.
@@ -50,26 +50,36 @@ lis = makeTokenParser
 -----------------------------------
 --- Parser de expresiones enteras
 -----------------------------------
-arithOp :: Parser (Exp Int -> Exp Int -> Exp Int)
-arithOp = reservedOp lis "*" *> return Times
-          <|> reservedOp lis "/" *>  return Div
-          <|> reservedOp lis "+" *> return Plus
-          <|> reservedOp lis "-" *> return Minus
 
-intexp :: Parser (Exp Int)
-intexp = intexp' `chainl1` arithOp
+-- p *> q, aplica el parser p y luego aplica el parser q, retorna el resultado de q
+-- f <$> p, aplica el parser p y luego aplica la función f al resultado
 
+mulOp :: Parser (Exp Int -> Exp Int -> Exp Int)
+mulOp = reservedOp lis "*" *> return Times <|> reservedOp lis "/" *> return Div
 
--- fun <%> p , aplica fun al resultado del parser p
--- p *> q, ejecuta el parser p y luego ejecuta el parser q 
-intexp' :: Parser (Exp Int)
-intexp' = try (do v <- identifier lis; ((reservedOp lis "++" *> return (VarInc v))
-                                        <|> (reservedOp lis "--" *> return (VarDec v)))
-                                        <|> return (Var v))
-          <|> ((Const . fromIntegral) <$> natural lis)
-          <|> (do reservedOp lis "-"; e <- intexp; return (UMinus e))
-          <|> parens lis intexp
+addOp :: Parser (Exp Int -> Exp Int -> Exp Int)
+addOp = reservedOp lis "+" *> return Plus <|> reservedOp lis "-" *> return Minus
 
+varOp :: Parser (Variable -> Exp Int)
+varOp = reservedOp lis "++" *> return VarInc <|> reservedOp lis "--" *> return VarDec
+
+intexp:: Parser (Exp Int)
+intexp = term `chainl1` addOp
+
+term:: Parser (Exp Int)
+term = factor `chainl1` mulOp
+
+factor:: Parser (Exp Int)
+factor = choice [ 
+                  parens lis intexp,
+                  (Const . fromIntegral) <$> natural lis,
+                  do {
+                    v <- identifier lis;
+                    op <- varOp;
+                    return (op v)
+                  },
+                  UMinus <$> (reservedOp lis "-" *> intexp)
+                ]   
 ------------------------------------
 --- Parser de expresiones booleanas
 ------------------------------------
