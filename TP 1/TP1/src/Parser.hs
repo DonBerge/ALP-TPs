@@ -53,6 +53,7 @@ lis = makeTokenParser
 
 -- p *> q, aplica el parser p y luego aplica el parser q, retorna el resultado de q
 -- f <$> p, aplica el parser p y luego aplica la función f al resultado
+-- choice ps: equivalente a foldr1 (<|>) ps, aplica los parsers en ps hasta que uno tenga éxito
 
 mulOp :: Parser (Exp Int -> Exp Int -> Exp Int)
 mulOp = reservedOp lis "*" *> return Times <|> reservedOp lis "/" *> return Div
@@ -61,7 +62,7 @@ addOp :: Parser (Exp Int -> Exp Int -> Exp Int)
 addOp = reservedOp lis "+" *> return Plus <|> reservedOp lis "-" *> return Minus
 
 varOp :: Parser (Variable -> Exp Int)
-varOp = reservedOp lis "++" *> return VarInc <|> reservedOp lis "--" *> return VarDec
+varOp = reservedOp lis "++" *> return VarInc <|> reservedOp lis "--" *> return VarDec <|> return Var
 
 intexp:: Parser (Exp Int)
 intexp = term `chainl1` addOp
@@ -83,33 +84,54 @@ factor = choice [
 ------------------------------------
 --- Parser de expresiones booleanas
 ------------------------------------
-boolexp :: Parser (Exp Bool)
-boolexp = (do chainl1 boolexp' (try (do reservedOp lis "&&"; return (And))
-                                <|> try (do reservedOp lis "||"; ; return (Or))))
+boolOp :: Parser (Exp Bool -> Exp Bool -> Exp Bool)
+boolOp = reservedOp lis "&&" *> return And <|> reservedOp lis "||" *> return Or
 
-boolexp' :: Parser (Exp Bool)
-boolexp' = try (do reserved lis "true"; return (BTrue))
-          <|> try (do reserved lis "false"; return (BTrue))
-          <|> parens lis boolexp
-          <|> try (do reservedOp lis "!"; b <- boolexp; return (Not b))
-          <|> try (do b1 <- intexp; reservedOp lis "=="; b2 <- intexp; return (Eq b1 b2))
-          <|> try (do b1 <- intexp; reservedOp lis "!="; b2 <- intexp; return (NEq b1 b2))
-          <|> try (do b1 <- intexp; reservedOp lis ">"; b2 <- intexp; return (Gt b1 b2))
-          <|> try (do b1 <- intexp; reservedOp lis "<"; b2 <- intexp; return (Lt b1 b2))
+compOp :: Parser (Exp Int -> Exp Int -> Exp Bool)
+compOp = choice [reservedOp lis "==" *> return Eq
+         , reservedOp lis "!=" *> return NEq
+         , reservedOp lis ">" *> return Gt
+         , reservedOp lis "<" *> return Lt]
 
+boolexp:: Parser (Exp Bool)
+boolexp = boolterm `chainl1` boolOp
+
+boolterm :: Parser (Exp Bool)
+boolterm = choice [ parens lis boolexp,
+                    Not <$> (reservedOp lis "!" *> boolexp),
+                    try $ reserved lis "true" *> return BTrue,
+                    try $ reserved lis "false" *> return BFalse,
+                    do {e0 <- intexp; op <- compOp; e1 <- intexp; return (op e0 e1)}]
 -----------------------------------
 --- Parser de comandos
 -----------------------------------
+seqOp :: Parser (Comm -> Comm -> Comm)
+seqOp = reservedOp lis ";" *> return Seq
+
 comm :: Parser Comm
-comm = (do chainl1 comm' (do reservedOp lis ";"; return (Seq)))
+comm = comm' `chainl1` seqOp
+
+ifParser:: Parser Comm
+ifParser = do {
+  reserved lis "if";
+  b <- boolexp;
+  c <- braces lis comm;
+  (
+    do {
+      reserved lis "else";
+      c2 <- braces lis comm;
+      return (IfThenElse b c c2);
+    }
+    <|>
+    return (IfThenElse b c Skip)
+  )
+}
 
 comm' :: Parser Comm
-comm' = try (do reserved lis "skip"; return (Skip))
-       <|> try (do v <- identifier lis; reservedOp lis "="; expp <- intexp; return (Let v expp))
-       <|> try (do reserved lis "if"; b <- boolexp; c <- braces lis comm; return (IfThenElse b c Skip))
-       <|> try (do reserved lis "if"; b <- boolexp;  c <- braces lis comm; reserved lis "else"; c2 <- braces lis comm; return (IfThenElse b c c2))
-       <|> try (do reserved lis "repeat"; c <- braces lis comm; reserved lis "until"; b <- boolexp; return (RepeatUntil c b))
-
+comm' = choice [try(do{v<-identifier lis; reservedOp lis "="; e<-intexp; return (Let v e)}),
+                reserved lis "skip" *> return Skip,
+                ifParser,
+                do{reserved lis "repeat"; c<-braces lis comm; reserved lis "until"; b<-boolexp; return (RepeatUntil c b)}]
 
 ------------------------------------
 -- Función de parseo
