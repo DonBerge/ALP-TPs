@@ -48,8 +48,8 @@ stepCommStar c    s = do
 -- Completar la definición
 stepComm :: Comm -> State -> Either Error (Pair Comm State)
 stepComm (Let v e) st = case evalExp e st of
-                                      Left e -> Left e
-                                      Right e' -> Right $ pair Skip $ uncurry (update v) $ e'
+                                      Left ex -> Left ex
+                                      Right e' -> Right $ pair Skip $ uncurry (update v) e'
   
 stepComm (Seq Skip c1) st = stepComm c1 st
 stepComm (Seq c0 c1) st = case stepComm c0 st of
@@ -88,7 +88,8 @@ evalUnOp e0 op st = case evalExp e0 st of
 evalConst :: a -> State -> Either Error (Pair a State)
 evalConst a b = Right $ pair a b
 
-checkDivByZero a b = if b == 0 then Just DivByZero else Nothing
+checkDivByZero :: Int -> Int -> Maybe Error
+checkDivByZero _ b = if b == 0 then Just DivByZero else Nothing
 
 noCheck :: a -> a -> Maybe Error
 noCheck _ _ = Nothing

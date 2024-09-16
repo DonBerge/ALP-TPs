@@ -8,7 +8,6 @@ import Prelude hiding (uncurry)
 import           AST
 import qualified Data.Map.Strict               as M
 import           Data.Strict.Tuple
-import Data.List (intercalate)
 
 -- Estados 
 type State = (M.Map Variable Int, String)
@@ -24,7 +23,7 @@ initState = (M.empty, [])
 -- Busca el valor de una variable en un estado
 -- Completar la definición
 lookfor :: Variable -> State -> Either Error Int
-lookfor v (m, s) = case M.lookup v m of
+lookfor v (m, _) = case M.lookup v m of
                             Nothing -> Left UndefVar
                             Just a -> Right a 
 
@@ -55,8 +54,8 @@ stepCommStar c    s = do
 -- Completar la definición
 stepComm :: Comm -> State -> Either Error (Pair Comm State)
 stepComm (Let v e) (st, s) = case evalExp e (st, s) of
-                                      Left e -> Left e
-                                      Right (e':!: s') -> Right $ pair Skip $ (addTrace (intercalate " " ["Let", v, (show e'), ", "]) (uncurry (update v) $ (e':!: s') )) 
+                                      Left ex -> Left ex
+                                      Right (e':!: s') -> Right $ pair Skip $ addTrace (unwords ["Let", v, show e', ", "]) (uncurry (update v) (e':!: s')) 
 
 stepComm (Seq Skip c1) st = stepComm c1 st
 stepComm (Seq c0 c1) st = case stepComm c0 st of
@@ -97,7 +96,8 @@ evalUnOp e0 op st = case evalExp e0 st of
 evalConst :: a -> State -> Either Error (Pair a State)
 evalConst a b = Right $ pair a b
 
-checkDivByZero a b = if b == 0 then Just DivByZero else Nothing
+checkDivByZero :: Int -> Int -> Maybe Error
+checkDivByZero _ b = if b == 0 then Just DivByZero else Nothing
 
 noCheck :: a -> a -> Maybe Error
 noCheck _ _ = Nothing
