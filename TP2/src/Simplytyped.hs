@@ -56,7 +56,13 @@ quote (VLam t f) = Lam t f
 
 -- evalúa un término en un entorno dado
 eval :: NameEnv Value Type -> Term -> Value
-eval = undefined
+eval nvs (Free s) = fst $ snd $ fromJust $ find ((s==) . fst) nvs
+eval nvs (Lam typee term) = VLam typee term
+eval nvs (t1 :@: t2) = let
+                        (VLam typee1 c1) = eval nvs t1
+                        (VLam typee2 c2) = eval nvs t2
+                       in
+                        eval nvs $ sub 0 (Lam typee2 c2) c1
 
 
 
