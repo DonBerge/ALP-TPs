@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Simplytyped
   ( conversion
   ,    -- conversion a terminos localmente sin nombre
@@ -22,7 +23,20 @@ import           Common
 
 -- conversion a términos localmente sin nombres
 conversion :: LamTerm -> Term
-conversion = undefined
+conversion = conversion' []
+  where
+    conversion' vars (LVar name) = case elemIndex name vars of
+                                  Nothing -> Free (Global name)
+                                  Just i -> Bound i
+    conversion' vars (LAbs name typee term) = let
+                                              term' = conversion' (name:vars) term
+                                             in
+                                              Lam typee term'
+    conversion' vars (LApp t1 t2) = let
+                                      t1' = conversion' vars t1
+                                      t2' = conversion' vars t2
+                                    in
+                                      t1' :@: t2'
 
 ----------------------------
 --- evaluador de términos
