@@ -15,27 +15,29 @@ import Data.Char
 %lexer {lexer} {TEOF}
 
 %token
-    '='     { TEquals }
-    ':'     { TColon }
-    '\\'    { TAbs }
-    '.'     { TDot }
-    '('     { TOpen }
-    ')'     { TClose }
-    '->'    { TArrow }
+    '='         { TEquals }
+    ':'         { TColon }
+    '\\'        { TAbs }
+    '.'         { TDot }
+    '('         { TOpen }
+    ')'         { TClose }
+    '->'        { TArrow }
     -- Ejercicio 3
-    'let'   { TLet }
-    'in'    { TIn }
+    'let'       { TLet }
+    'in'        { TIn }
     -- Ejercicio 4
-    '0'     { TZero }
-    'suc'   { TSuc }
-    'R'     { TNatRec }
+    '0'         { TZero }
+    'suc'       { TSuc }
+    'R'         { TNatRec }
+    'Nat'       { TTypeNat }
     -- Ejercicio 6
-    'nil'   { TNil }
-    'cons'  { TCons }
-    'RL'    { TListRec }
-    VAR     { TVar $$ }
-    TYPEE   { TTypeE }
-    DEF     { TDef }
+    'nil'       { TNil }
+    'cons'      { TCons }
+    'RL'        { TListRec }
+    'List Nat'  { TTypeList }
+    VAR         { TVar $$ }
+    TYPEE       { TTypeE }
+    DEF         { TDef }
     
 
 %left '=' 
@@ -60,7 +62,7 @@ Exp     :: { LamTerm }
 -- Ejercicio 4
 NatExp :: { LamTerm }
         : '0'                          { LZero }
-        | 'suc' NatExp                 { LSuc $2 }
+        | 'suc' Exp                    { LSuc $2 }
         | 'R' Exp Exp Exp              { LRec $2 $3 $4 }
 
 -- Ejercicio 6
@@ -79,6 +81,8 @@ Atom    :: { LamTerm }
 
 Type    : TYPEE                        { EmptyT }
         | Type '->' Type               { FunT $1 $3 }
+        | 'Nat'                        { NatT }
+        | 'List Nat'                   { ListT }
         | '(' Type ')'                 { $2 }
 
 Defs    : Defexp Defs                  { $1 : $2 }
@@ -130,10 +134,12 @@ data Token = TVar String
                | TZero
                | TSuc
                | TNatRec
+               | TTypeNat
                -- Ejercicio 6
                | TNil
                | TCons
                | TListRec
+               | TTypeList
                deriving Show
 
 ----------------------------------
@@ -167,10 +173,12 @@ lexer cont s = case s of
                               -- Ejercicio 4
                               ("suc", rest) -> cont TSuc rest
                               ("R", rest) -> cont TNatRec rest
+                              ("Nat", rest) -> cont TTypeNat rest
                               -- Ejercicio 6
                               ("nil", rest) -> cont TNil rest
                               ("cons", rest) -> cont TCons rest
                               ("RL", rest) -> cont TListRec rest
+                              ("List Nat", rest) -> cont TTypeList rest
                               (var,rest)    -> cont (TVar var) rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs
