@@ -22,6 +22,13 @@ import Data.Char
     '('     { TOpen }
     ')'     { TClose }
     '->'    { TArrow }
+    -- Ejercicio 3
+    LET   { TLet }
+    IN    { TIn }
+    -- Ejercicio 4
+    '0'     { TZero }
+    SUCC    { TSuc }
+    NATREC  { TRec }
     VAR     { TVar $$ }
     TYPEE   { TTypeE }
     DEF     { TDef }
@@ -38,9 +45,19 @@ Def     :  Defexp                      { $1 }
 Defexp  : DEF VAR '=' Exp              { Def $2 $4 } 
 
 Exp     :: { LamTerm }
-        : '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
+        -- Ejercicio 3
+        : LET VAR '=' Exp IN Exp       { LLet $2 $4 $6 }
+        | '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
+        -- Ejercicio 4
+        | NatExp                       { $1 }
         | NAbs                         { $1 }
-        
+
+-- Ejercicio 4
+NatExp :: { LamTerm }
+        : '0'                          { LZero }
+        | SUCC NatExp                  { LSuc $2 }
+        | NATREC Exp Exp Exp           { LRec $2 $3 $4 }
+
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
         | Atom                         { $1 }
@@ -55,7 +72,6 @@ Type    : TYPEE                        { EmptyT }
 
 Defs    : Defexp Defs                  { $1 : $2 }
         |                              { [] }
-     
 {
 
 data ParseResult a = Ok a | Failed String
@@ -96,6 +112,13 @@ data Token = TVar String
                | TArrow
                | TEquals
                | TEOF
+               -- Ejercicio 3
+               | TLet
+               | TIn
+               -- Ejercicio 4
+               | TZero
+               | TSuc
+               | TRec
                deriving Show
 
 ----------------------------------
@@ -116,11 +139,19 @@ lexer cont s = case s of
                     (')':cs) -> cont TClose cs
                     (':':cs) -> cont TColon cs
                     ('=':cs) -> cont TEquals cs
+                    -- Ejercicio 4
+                    ('0':cs) -> cont TZero cs
                     unknown -> \line -> Failed $ 
                      "Línea "++(show line)++": No se puede reconocer "++(show $ take 10 unknown)++ "..."
                     where lexVar cs = case span isAlpha cs of
                               ("E",rest)    -> cont TTypeE rest
                               ("def",rest)  -> cont TDef rest
+                              -- Ejercicio 3
+                              ("let", rest) -> cont TLet rest
+                              ("in", rest) -> cont TIn rest
+                              -- Ejercicio 4
+                              ("suc", rest) -> cont TSuc rest
+                              ("R", rest) -> cont TRec rest
                               (var,rest)    -> cont (TVar var) rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs

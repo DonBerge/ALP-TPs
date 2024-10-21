@@ -37,7 +37,15 @@ conversion = conversion' []
                                       t2' = conversion' vars t2
                                     in
                                       t1' :@: t2'
-
+    -- Ejercicio 4
+    conversion' _ LZero = Zero
+    conversion' vars (LSuc t) = Suc $ conversion' vars t
+    conversion' vars (LRec t1 t2 t3) = let
+                                        t1' = conversion' vars t1
+                                        t2' = conversion' vars t1
+                                        t3' = conversion' vars t1
+                                       in
+                                        Rec t1' t2' t3'
 ----------------------------
 --- evaluador de términos
 ----------------------------
