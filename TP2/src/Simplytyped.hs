@@ -29,9 +29,9 @@ conversion = conversion' []
                                   Nothing -> Free (Global name)
                                   Just i -> Bound i
     conversion' vars (LAbs name typee term) = let
-                                              term' = conversion' (name:vars) term
-                                             in
-                                              Lam typee term'
+                                                term' = conversion' (name:vars) term
+                                              in
+                                                Lam typee term'
     conversion' vars (LApp t1 t2) = let
                                       t1' = conversion' vars t1
                                       t2' = conversion' vars t2
@@ -46,6 +46,13 @@ conversion = conversion' []
                                         t3' = conversion' vars t3
                                        in
                                         Rec t1' t2' t3'
+    -- Ejercicio 6
+    conversion' _ LNil = Nil
+    conversion' vars (LCons t1 t2) = let
+                                      t1' = conversion' vars t1
+                                      t2' = conversion' vars t2
+                                     in
+                                      Cons t1' t2'
 ----------------------------
 --- evaluador de términos
 ----------------------------

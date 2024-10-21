@@ -27,8 +27,12 @@ import Data.Char
     'in'    { TIn }
     -- Ejercicio 4
     '0'     { TZero }
-    'suc'  { TSuc }
+    'suc'   { TSuc }
     'R'     { TNatRec }
+    -- Ejercicio 6
+    'nil'   { TNil }
+    'cons'  { TCons }
+    'RL'    { TListRec }
     VAR     { TVar $$ }
     TYPEE   { TTypeE }
     DEF     { TDef }
@@ -50,6 +54,7 @@ Exp     :: { LamTerm }
         | '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
         -- Ejercicio 4
         | NatExp                       { $1 }
+        | ListExp                      { $1 }
         | NAbs                         { $1 }
 
 -- Ejercicio 4
@@ -57,6 +62,12 @@ NatExp :: { LamTerm }
         : '0'                          { LZero }
         | 'suc' NatExp                 { LSuc $2 }
         | 'R' Exp Exp Exp              { LRec $2 $3 $4 }
+
+-- Ejercicio 6
+ListExp :: { LamTerm }
+        : 'nil'                        { LNil }
+        | 'cons' Exp Exp               { LCons $2 $3 }
+        | 'RL' Exp Exp Exp             { LRec $2 $3 $4 }
 
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
@@ -119,6 +130,10 @@ data Token = TVar String
                | TZero
                | TSuc
                | TNatRec
+               -- Ejercicio 6
+               | TNil
+               | TCons
+               | TListRec
                deriving Show
 
 ----------------------------------
@@ -152,6 +167,10 @@ lexer cont s = case s of
                               -- Ejercicio 4
                               ("suc", rest) -> cont TSuc rest
                               ("R", rest) -> cont TNatRec rest
+                              -- Ejercicio 6
+                              ("nil", rest) -> cont TNil rest
+                              ("cons", rest) -> cont TCons rest
+                              ("RL", rest) -> cont TListRec rest
                               (var,rest)    -> cont (TVar var) rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs
