@@ -23,12 +23,12 @@ import Data.Char
     ')'     { TClose }
     '->'    { TArrow }
     -- Ejercicio 3
-    LET   { TLet }
-    IN    { TIn }
+    'let'   { TLet }
+    'in'    { TIn }
     -- Ejercicio 4
     '0'     { TZero }
-    SUCC    { TSuc }
-    NATREC  { TRec }
+    'suc'  { TSuc }
+    'R'     { TNatRec }
     VAR     { TVar $$ }
     TYPEE   { TTypeE }
     DEF     { TDef }
@@ -46,7 +46,7 @@ Defexp  : DEF VAR '=' Exp              { Def $2 $4 }
 
 Exp     :: { LamTerm }
         -- Ejercicio 3
-        : LET VAR '=' Exp IN Exp       { LLet $2 $4 $6 }
+        : 'let' VAR '=' Exp 'in' Exp   { LLet $2 $4 $6 }
         | '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
         -- Ejercicio 4
         | NatExp                       { $1 }
@@ -55,8 +55,8 @@ Exp     :: { LamTerm }
 -- Ejercicio 4
 NatExp :: { LamTerm }
         : '0'                          { LZero }
-        | SUCC NatExp                  { LSuc $2 }
-        | NATREC Exp Exp Exp           { LRec $2 $3 $4 }
+        | 'suc' NatExp                 { LSuc $2 }
+        | 'R' Exp Exp Exp              { LRec $2 $3 $4 }
 
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
@@ -118,7 +118,7 @@ data Token = TVar String
                -- Ejercicio 4
                | TZero
                | TSuc
-               | TRec
+               | TNatRec
                deriving Show
 
 ----------------------------------
@@ -151,7 +151,7 @@ lexer cont s = case s of
                               ("in", rest) -> cont TIn rest
                               -- Ejercicio 4
                               ("suc", rest) -> cont TSuc rest
-                              ("R", rest) -> cont TRec rest
+                              ("R", rest) -> cont TNatRec rest
                               (var,rest)    -> cont (TVar var) rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs

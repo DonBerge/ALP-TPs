@@ -42,8 +42,8 @@ conversion = conversion' []
     conversion' vars (LSuc t) = Suc $ conversion' vars t
     conversion' vars (LRec t1 t2 t3) = let
                                         t1' = conversion' vars t1
-                                        t2' = conversion' vars t1
-                                        t3' = conversion' vars t1
+                                        t2' = conversion' vars t2
+                                        t3' = conversion' vars t3
                                        in
                                         Rec t1' t2' t3'
 ----------------------------
