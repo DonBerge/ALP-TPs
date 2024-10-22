@@ -1,0 +1,5 @@
+def Ack = \m:Nat. R (\n:Nat. Succ n) 
+                    (\f:Nat->Nat.\x:Nat.\n:Nat R (f (Succ 0)) 
+                                                 (\r:Nat.\y:nat. f r)
+                                                 n)
+                    m
