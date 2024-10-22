@@ -70,11 +70,24 @@ sub _ _ (Bound j) | otherwise = Bound j
 sub _ _ (Free n   )           = Free n
 sub i t (u   :@: v)           = sub i t u :@: sub i t v
 sub i t (Lam t'  u)           = Lam t' (sub (i + 1) t u)
+-- Ejercicio 3
 sub i t (Let u v) = Let (sub i t u) (sub i t v)
+-- Ejercicio 4
+sub i t Zero = Zero
+sub i t (Suc u) = Suc $ sub i t u
+sub i t (Rec u v w) = let
+                        u' = sub i t u
+                        v' = sub i t v
+                        w' = sub i t w
+                      in
+                        Rec u' v' w'
 
 -- convierte un valor en el término equivalente
 quote :: Value -> Term
 quote (VLam t f) = Lam t f
+-- Ejericio 4
+quote (VNum NZero) = Zero
+quote (VNum (NSuc n)) = Suc $ quote $ VNum n
 
 -- evalúa un término en un entorno dado
 eval :: NameEnv Value Type -> Term -> Value
@@ -94,6 +107,15 @@ eval nvs (Let t u) = let
                      in
                       eval nvs u'
 
+-- Ejercicio 4
+eval nvs Zero = VNum NZero
+eval nvs (Suc n) = let 
+                    (VNum n') = eval nvs n
+                   in
+                    VNum $ NSuc n'
+eval nvs (Rec t1 t2 t3) = case t3 of
+                            Zero -> eval nvs t1
+                            Suc t -> eval nvs $ t2 :@: Rec t1 t2 t :@: t
 
 
 ----------------------
@@ -142,6 +164,23 @@ infer' c e (t :@: u) = infer' c e t >>= \tt -> infer' c e u >>= \tu ->
     FunT t1 t2 -> if tu == t1 then ret t2 else matchError t1 tu
     _          -> notfunError tt
 infer' c e (Lam t u) = infer' (t : c) e u >>= \tu -> ret $ FunT t tu
+-- Ejercicio 3
 infer' c e (Let t u) = infer' c e t >>= \tt -> infer' (tt : c) e u
+-- Ejercicio 4
+infer' c e Zero = ret NatT
+infer' c e (Suc t) = infer' c e t >>= \tt ->
+  case tt of
+    NatT -> ret NatT
+    _ -> matchError NatT tt
+infer' c e (Rec t1 t2 t3) = infer' c e t1 >>= \tt1 -> infer' c e t2 >>= \tt2 -> infer' c e t3 >>= \tt3 ->
+  case tt3 of
+    NatT -> let
+              wrongTT2Error = matchError (FunT tt1 (FunT NatT tt1)) tt2
+            in case tt2 of
+              (FunT tu (FunT NatT tv)) -> if tt1 == tu && tt1 == tv
+                                            then ret tt1
+                                            else wrongTT2Error
+              _ -> wrongTT2Error
+    _ -> matchError NatT tt3
 
 
