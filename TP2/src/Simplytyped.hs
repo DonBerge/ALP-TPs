@@ -37,6 +37,12 @@ conversion = conversion' []
                                       t2' = conversion' vars t2
                                     in
                                       t1' :@: t2'
+    -- Ejercicio 3
+    conversion' vars (LLet name t1 t2) = let
+                                          t1' = conversion' vars t1
+                                          t2' = conversion' (name:vars) t2
+                                         in
+                                          Let t1' t2'
     -- Ejercicio 4
     conversion' _ LZero = Zero
     conversion' vars (LSuc t) = Suc $ conversion' vars t
@@ -64,13 +70,13 @@ sub _ _ (Bound j) | otherwise = Bound j
 sub _ _ (Free n   )           = Free n
 sub i t (u   :@: v)           = sub i t u :@: sub i t v
 sub i t (Lam t'  u)           = Lam t' (sub (i + 1) t u)
+sub i t (Let u v) = Let (sub i t u) (sub i t v)
 
 -- convierte un valor en el término equivalente
 quote :: Value -> Term
 quote (VLam t f) = Lam t f
 
 -- evalúa un término en un entorno dado
--- Construyo eval a partir de la funcion infer
 eval :: NameEnv Value Type -> Term -> Value
 eval nvs (Free n) = fst $ fromJust $ lookup n nvs -- infer previamente chequeo que la variable esta definida
 eval nvs (Lam t u) = VLam t u
@@ -81,6 +87,12 @@ eval nvs (t1 :@: t2) = let
                         term1'' = sub 0 (quote t2') term1'
                        in
                         eval nvs term1''
+-- Ejercicio 3
+eval nvs (Let t u) = let
+                      t' = eval nvs t
+                      u' = sub 0 (quote t') u
+                     in
+                      eval nvs u'
 
 
 
@@ -127,8 +139,9 @@ infer' _ e (Free  n) = case lookup n e of
   Just (_, t) -> ret t
 infer' c e (t :@: u) = infer' c e t >>= \tt -> infer' c e u >>= \tu ->
   case tt of
-    FunT t1 t2 -> if (tu == t1) then ret t2 else matchError t1 tu
+    FunT t1 t2 -> if tu == t1 then ret t2 else matchError t1 tu
     _          -> notfunError tt
 infer' c e (Lam t u) = infer' (t : c) e u >>= \tu -> ret $ FunT t tu
+infer' c e (Let t u) = infer' c e t >>= \tt -> infer' (tt : c) e u
 
 
