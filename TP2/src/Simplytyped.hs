@@ -21,44 +21,31 @@ import           Common
 -- conversion
 -----------------------
 
+toTerm:: (LamTerm -> Term) -> LamTerm -> Term
+toTerm f (LAbs name typee t) = Lam typee $ f t 
+toTerm f (LApp t1 t2) = f t1 :@: f t2
+toTerm f LZero = Zero
+toTerm f (LSuc t) = Suc $ f t
+toTerm f (LRec t1 t2 t3) = Rec (f t1) (f t2) (f t3)
+toTerm f LNil = Nil
+toTerm f (LCons t1 t2) = Cons (f t1) (f t2)
+
 -- conversion a términos localmente sin nombres
 conversion :: LamTerm -> Term
 conversion = conversion' []
-  where
-    conversion' vars (LVar name) = case elemIndex name vars of
-                                  Nothing -> Free (Global name)
-                                  Just i -> Bound i
-    conversion' vars (LAbs name typee term) = let
-                                                term' = conversion' (name:vars) term
-                                              in
-                                                Lam typee term'
-    conversion' vars (LApp t1 t2) = let
+
+conversion' :: [String] -> LamTerm -> Term
+conversion' vars (LVar name) = maybe (Free (Global name)) Bound (elemIndex name vars)
+conversion' vars t@(LAbs name _ _) = toTerm (conversion' (name:vars)) t
+
+-- Ejercicio 3
+conversion' vars (LLet name t1 t2) = let
                                       t1' = conversion' vars t1
-                                      t2' = conversion' vars t2
-                                    in
-                                      t1' :@: t2'
-    -- Ejercicio 3
-    conversion' vars (LLet name t1 t2) = let
-                                          t1' = conversion' vars t1
-                                          t2' = conversion' (name:vars) t2
-                                         in
-                                          Let t1' t2'
-    -- Ejercicio 4
-    conversion' _ LZero = Zero
-    conversion' vars (LSuc t) = Suc $ conversion' vars t
-    conversion' vars (LRec t1 t2 t3) = let
-                                        t1' = conversion' vars t1
-                                        t2' = conversion' vars t2
-                                        t3' = conversion' vars t3
-                                       in
-                                        Rec t1' t2' t3'
-    -- Ejercicio 6
-    conversion' _ LNil = Nil
-    conversion' vars (LCons t1 t2) = let
-                                      t1' = conversion' vars t1
-                                      t2' = conversion' vars t2
+                                      t2' = conversion' (name:vars) t2
                                      in
-                                      Cons t1' t2'
+                                      Let t1' t2'
+conversion' vars t = toTerm (conversion' vars) t
+
 ----------------------------
 --- evaluador de términos
 ----------------------------
