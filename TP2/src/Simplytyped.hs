@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Simplytyped
   ( conversion
   ,    -- conversion a terminos localmente sin nombre
@@ -21,6 +20,7 @@ import           Common
 -- conversion
 -----------------------
 
+-- Convierte un LamTerm a un Term, aplicando una funcion de conversion para los subterminos
 toTerm:: (LamTerm -> Term) -> LamTerm -> Term
 toTerm f (LAbs name typee t) = Lam typee $ f t 
 toTerm f (LApp t1 t2) = f t1 :@: f t2
@@ -29,6 +29,8 @@ toTerm f (LSuc t) = Suc $ f t
 toTerm f (LRec t1 t2 t3) = Rec (f t1) (f t2) (f t3)
 toTerm f LNil = Nil
 toTerm f (LCons t1 t2) = Cons (f t1) (f t2)
+-- Estos ultimos no se usan
+toTerm f t = error $ "No se puede convertir el lambda termino " ++ show t ++ " a un termino"
 
 -- conversion a términos localmente sin nombres
 conversion :: LamTerm -> Term
@@ -52,8 +54,9 @@ conversion' vars t = toTerm (conversion' vars) t
 
 -- substituye una variable por un término en otro término
 sub :: Int -> Term -> Term -> Term
-sub i t (Bound j) | i == j    = t
-sub _ _ (Bound j) | otherwise = Bound j
+sub i t (Bound j) 
+  | i == j    = t
+  | otherwise = Bound j
 sub _ _ (Free n   )           = Free n
 sub i t (u   :@: v)           = sub i t u :@: sub i t v
 sub i t (Lam t'  u)           = Lam t' (sub (i + 1) t u)
@@ -68,6 +71,8 @@ sub i t (Rec u v w) = let
                         w' = sub i t w
                       in
                         Rec u' v' w'
+sub i t Nil = Nil
+sub i t (Cons x xs) = Cons (sub i t x) (sub i t xs)
 
 -- convierte un valor en el término equivalente
 quote :: Value -> Term
@@ -84,18 +89,15 @@ eval :: NameEnv Value Type -> Term -> Value
 eval nvs (Free n) = fst $ fromJust $ lookup n nvs -- infer previamente chequeo que la variable esta definida
 eval nvs (Lam t u) = VLam t u
 eval nvs (t1 :@: t2) = let
-                        (VLam _ term1') = eval nvs t1
+                        (VLam _ t1') = eval nvs t1
                         t2' = eval nvs t2
-                        -- Elimina los bound
-                        term1'' = sub 0 (quote t2') term1'
                        in
-                        eval nvs term1''
+                        eval nvs $ sub 0 (quote t2') t1'
 -- Ejercicio 3
 eval nvs (Let t u) = let
                       t' = eval nvs t
-                      u' = sub 0 (quote t') u
                      in
-                      eval nvs u'
+                      eval nvs $ sub 0 (quote t') u
 
 -- Ejercicio 4
 eval nvs Zero = VNum NZero
@@ -104,16 +106,19 @@ eval nvs (Suc n) = let
                    in
                     VNum $ NSuc n'
 eval nvs (Rec t1 t2 t3) = case eval nvs t3 of
+                            -- Naturales
                             VNum NZero -> eval nvs t1
-                            VNum (NSuc t) -> let
+                            VNum (NSuc t) ->  let
                                                 t' = quote $ VNum t
-                                               in eval nvs $ t2 :@: Rec t1 t2 t' :@: t'
+                                              in eval nvs $ t2 :@: Rec t1 t2 t' :@: t'
+                            -- Listas
                             VList VNil -> eval nvs t1
                             VList (VCons n lv) -> let
                                                     n'  = quote $ VNum n
                                                     lv' = quote $ VList lv 
                                                   in
                                                     eval nvs $ t2 :@: n' :@: lv' :@: Rec t1 t2 lv'
+                            val -> error $ "Se esperaba un NumVal o un ListVal, pero se recibio " ++ show val
 -- Ejercicio 6
 eval nvs Nil = VList VNil
 eval nvs (Cons x xs) = let
@@ -121,6 +126,7 @@ eval nvs (Cons x xs) = let
                         (VList xs') = eval nvs x
                        in
                         VList $ VCons x' xs'
+eval _ t = error $ "No se puede convertir el termino " ++ show t ++ " a un valor"
 
 ----------------------
 --- type checker
