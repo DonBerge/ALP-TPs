@@ -1,0 +1,19 @@
+{- Lambda terminos para probar la funcion conversion
+
+Funcion identidad 
+\x:E.x -> Lam EmptyT (Bound 0)
+
+Funcion constante de una variable global
+\x:E.G -> Lam EmptyT (Free (Global "G"))
+
+Auto aplicacion
+\x:E.x x -> Lam EmptyT ((Bound 0) :@: (Bound 0))
+
+True
+\x:E.\y:E.x -> Lam EmptyT (Lam EmptyT (Bound 1))
+
+Or Booleano
+\p:E.\q:E.(\x:E.x) p (\x:E.\y:E.x) q === \p q. ifthenelse p true q 
+    -> 
+Lam EmptyT (Lam EmptyT ((Lam EmptyT (Bound 0) :@: Bound 1) :@: Lam EmptyT (Lam EmptyT (Bound 1)) :@: Bound 0))
+-}
