@@ -54,29 +54,20 @@ Exp     :: { LamTerm }
         -- Ejercicio 3
         : 'let' VAR '=' Exp 'in' Exp   { LLet $2 $4 $6 }
         | '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
-        -- Ejercicio 4
-        | NatExp                       { $1 }
-        | ListExp                      { $1 }
         | NAbs                         { $1 }
-
--- Ejercicio 4
-NatExp :: { LamTerm }
-        : '0'                          { LZero }
-        | 'suc' Exp                    { LSuc $2 }
-        | 'R' Exp Exp Exp              { LRec $2 $3 $4 }
-
--- Ejercicio 6
-ListExp :: { LamTerm }
-        : 'nil'                        { LNil }
-        | 'cons' Exp Exp               { LCons $2 $3 }
-        | 'RL' Exp Exp Exp             { LRec $2 $3 $4 }
 
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
+        | 'suc' NAbs                   { LSuc $2 }
+        | 'cons' NAbs NAbs             { LCons $2 $3 }
+        | 'R' NAbs NAbs NAbs           { LRec $2 $3 $4 }
+        | 'RL' NAbs NAbs NAbs          { LRec $2 $3 $4 }
         | Atom                         { $1 }
 
 Atom    :: { LamTerm }
         : VAR                          { LVar $1 }  
+        | '0'                          { LZero }
+        | 'nil'                        { LNil }
         | '(' Exp ')'                  { $2 }
 
 Type    : TYPEE                        { EmptyT }
