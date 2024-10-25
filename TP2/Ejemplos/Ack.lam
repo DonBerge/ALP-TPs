@@ -1,5 +1,7 @@
-def Ack = \m:Nat. R (\n:Nat. Succ n) 
-                    (\f:Nat->Nat.\x:Nat.\n:Nat R (f (Succ 0)) 
-                                                 (\r:Nat.\y:nat. f r)
-                                                 n)
+def uno = suc 0
+
+def ack = \m:Nat. R (\n:Nat. suc n)
+                    (\f:Nat->Nat. \x:Nat. \n:Nat. R (f uno) 
+                                                  (\r:Nat. \y:Nat. f r) 
+                                                  n)
                     m
