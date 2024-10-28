@@ -1,0 +1,26 @@
+? C:\Users\Ramiro\AppData\Local\Programs\stack\x86_64-windows\ghc-9.6.6\lib\x86_64-windows-ghc-9.6.6\rts-1.0.2\include\ghcversion.h
+: hash: 9032f6afc97dcddfe8c8b306639eb6f456e3f6667f3dd8268681f51bb77c8634
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\.stack-work\dist\effaccc7\build\autogen\Paths_TP1.hs:
+  hash: 396bdf6cd61e2d735a3e46f8cab196c6eea4e1bc0c901e091b328e1e5bb5f4ce
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\.stack-work\dist\effaccc7\build\autogen\cabal_macros.h:
+  hash: 9f2be95ac9f9ec8c5358093f4d2fa944a0cc876abd83a8bf6035f3bde717c059
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\CHANGELOG.md:
+  hash: 4a5dad25e332009fd9bddfcef7764f5f253830e9980ce14403fee3991219ea0a
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\README.md:
+  hash: 26d907e542a18340a0051396da65f4f71d7e4aebf5c6ea31991222965d427c8d
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\TP1.cabal:
+  hash: 042082b73fb5e24b524b8fa5cbe7ea065004f029f08a8ef4935cc0b9850242e6
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\package.yaml:
+  hash: 53411f132f8cc9ab32bdfeaccf218b92640b2581f2e6d34643ff1b2bcaacf581
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\src\AST.hs:
+  hash: 81bc52dd15ecfeac44dbd92f9fcf3d728fd28ee85ad0f3ada1a3056adab109f0
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\src\Eval1.hs:
+  hash: 57eefc7a41a557923de6e6566b273ebb36cd88ef3e08ad019ea92adedca5d431
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\src\Eval2.hs:
+  hash: 58da5efbfbf35768556704dfb228203a63bc304413125587776ae8f8e07d6f68
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\src\Eval3.hs:
+  hash: c7cf1c4e859287047391b8486d0c7e49940c767ecc71021fcf0fa7388b061d4d
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\src\PPLis.hs:
+  hash: a6db080b99833632890060908c80b0bd67e3c6c08af5d7c6ebcc43cae20c42ff
+C:\Users\Ramiro\Desktop\ALP\ALP-TPs\TP 1\TP1\src\Parser.hs:
+  hash: c1d497e4b8354713d7ad83f52bc89fd8ce1e4bf21a0143551f48d588173c9547

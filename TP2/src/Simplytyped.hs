@@ -123,7 +123,7 @@ eval nvs (Rec t1 t2 t3) = case eval nvs t3 of
 eval nvs Nil = VList VNil
 eval nvs (Cons x xs) = let
                         (VNum x') = eval nvs x
-                        (VList xs') = eval nvs x
+                        (VList xs') = eval nvs xs
                        in
                         VList $ VCons x' xs'
 eval _ t = error $ "No se puede convertir el termino " ++ show t ++ " a un valor"

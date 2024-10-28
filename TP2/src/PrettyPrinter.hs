@@ -41,7 +41,7 @@ pp ii vs Zero = text "0"
 pp ii vs (Suc t) = text "suc " <> pp ii vs t
 pp ii vs (Rec t u v) = (if isNat v then text "R " else text "RL ") <> parens (pp ii vs t) <> parens (pp ii vs u) <> parens (pp ii vs v)
 pp ii vs Nil = text "nil"
-pp ii vs (Cons t u) = text "cons " <> pp ii vs t <> pp ii vs u
+pp ii vs (Cons t u) = text "cons " <> parens (pp ii vs t) <> text " " <> parens (pp ii vs u)
 pp ii vs (Let t u) = text "let " <> pp ii vs t <> text " in " <> pp (ii+1) vs u
 
 isLam :: Term -> Bool
