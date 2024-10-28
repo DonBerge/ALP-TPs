@@ -169,7 +169,12 @@ lexer cont s = case s of
                               ("nil", rest) -> cont TNil rest
                               ("cons", rest) -> cont TCons rest
                               ("RL", rest) -> cont TListRec rest
-                              ("List Nat", rest) -> cont TTypeList rest
+                              ("List", rest) -> let
+                                                  (_, rest') = span isSpace rest
+                                                in case span isAlpha rest' of
+                                                  ("Nat", rest'') -> cont TTypeList rest''
+                                                  _ -> 
+                                                    \ line -> Failed $ "Línea "++(show line)++": Solo se permiten listas de naturales"
                               (var,rest)    -> cont (TVar var) rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs
