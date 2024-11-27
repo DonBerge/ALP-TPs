@@ -37,12 +37,26 @@ pp ii vs (Lam t c) =
     <> printType t
     <> text ". "
     <> pp (ii + 1) vs c
-pp ii vs Zero = text "0"
-pp ii vs (Suc t) = text "suc " <> pp ii vs t
-pp ii vs (Rec t u v) = (if isNat v then text "R " else text "RL ") <> parens (pp ii vs t) <> parens (pp ii vs u) <> parens (pp ii vs v)
-pp ii vs Nil = text "nil"
-pp ii vs (Cons t u) = text "cons " <> parens (pp ii vs t) <> text " " <> parens (pp ii vs u)
-pp ii vs (Let t u) = text "let " <> pp ii vs t <> text " in " <> pp (ii+1) vs u
+pp ii vs (Let t u) = sep [text "let", pp ii vs t , text "in", pp (ii+1) vs u]
+pp ii vs t
+  | isNat t = printNat ii vs t
+  | otherwise = printList ii vs t
+
+applyParen :: Int -> [String] -> Term -> Doc
+applyParen ii vs t = parensIf (not $ isAtom t) (pp ii vs t)
+
+printNat :: Int -> [String] -> Term -> Doc
+printNat ii vs Zero = text "0"
+printNat ii vs (Suc t@(Suc _)) = sep[text "suc", pp ii vs t] -- No poner parentesis en cadenas de suc
+printNat ii vs (Suc t) = sep [text "suc", applyParen ii vs t]
+printNat ii vs (Rec t u v) = sep [text "R", applyParen ii vs t, applyParen ii vs u, applyParen ii vs v]
+printNat ii vs t = pp ii vs t
+
+printList :: Int -> [String] -> Term -> Doc
+printList ii vs Nil = text "nil"
+printList ii vs (Cons t u) = sep [text "cons", applyParen ii vs t, applyParen ii vs u]
+printList ii vs (Rec t u v) = sep [text "RL", applyParen ii vs t, applyParen ii vs u, applyParen ii vs v]
+printList ii vs t = pp ii vs t
 
 isLam :: Term -> Bool
 isLam (Lam _ _) = True
@@ -57,6 +71,11 @@ isNat Zero = True
 isNat (Suc _) = True
 isNat (Rec _ _ v) = isNat v
 isNat _ = False
+
+isAtom :: Term -> Bool
+isAtom Zero = True
+isAtom Nil = True
+isAtom _ = False
 
 -- pretty-printer de tipos
 printType :: Type -> Doc
