@@ -70,48 +70,79 @@ stepCommStar c    = stepComm c >>= \c' -> stepCommStar c'
 -- Evalua un paso de un comando
 stepComm :: (MonadState m, MonadError m) => Comm -> m Comm
 stepComm Skip = return Skip 
-stepComm (Let v x) = do e <- (evalExp x)
-                        update v e
-                        return Skip
+stepComm (Let v x) = evalExp x >>= update v >> return Skip
 stepComm (Seq c1 c2) = stepComm c1 >> stepComm c2 
 stepComm (IfThenElse b c1 c2) = do p <- evalExp b
                                    if p then stepComm c1
                                         else stepComm c2
-stepComm (Repeat b c1) = do p <- evalExp b
-                            if p then stepComm (Seq c1 (Repeat b c1))
-                                 else stepComm Skip
+stepComm c@(Repeat b c1) = do p <- evalExp b
+                              if p then stepComm c1 >> stepComm c 
+                                   else stepComm Skip
 
 
 
 -- Evalua una expresion
 
-binOp f e1 e2 = do
-                  v1 <- evalExp e1
-                  v2 <- evalExp e2
-                  return (f v1 v2)
+when :: Applicative f => Bool -> f () -> f ()
+when p s  = if p then s else pure ()
+
+evalConst :: (MonadState m, MonadError m) => a -> m a
+evalConst = return
+
+evalUnOp :: (MonadState m, MonadError m) => (a->b) -> Exp a -> m b
+evalUnOp op = (fmap op) . evalExp
+
+
+type Check a m = a -> a -> m ()
+
+checkDivByZero :: (MonadError m) => Check Int m
+checkDivByZero _ y = when (y==0) (throw DivByZero)
+
+noCheck :: Applicative m => Check a m
+noCheck _ _ = pure ()
+
+evalBinOpWithCheck :: (MonadState m, MonadError m) => Check a m -> (a->a->b) -> Exp a -> Exp a -> m b
+evalBinOpWithCheck check op x y = do
+                                    x' <- evalExp x
+                                    y' <- evalExp y
+                                    check x' y'
+                                    return (x' `op` y')
+
+evalBinOp :: (MonadState m, MonadError m) => (a->a->b) -> Exp a -> Exp a -> m b
+evalBinOp = evalBinOpWithCheck noCheck
+
+evalVarOp :: (MonadState m, MonadError m) => (Int->Int) -> Variable -> m Int
+evalVarOp op v = do {
+                  x <- lookfor v;
+                  x' <- return (op x);
+                  when (x/=x') (update v x');
+                  return x';
+                 }
 
 evalExp :: (MonadState m, MonadError m) => Exp a -> m a
-evalExp (Const a) = return a
-evalExp (Var x) = lookfor x
-evalExp (UMinus x) = (evalExp x) >>= (return . (negate))
-evalExp (Plus x y) = binOp (+) x y
-evalExp (Minus x y) = binOp (-) x y
-evalExp (Times x y) = binOp (*) x y
-evalExp (Div x y) = do v1 <- evalExp x
-                       v2 <- evalExp y
-                       if v2 == 0 then throw DivByZero
-                                 else return (div v1 v2)
+-- Operaciones con variables
+evalExp (Var v) = evalVarOp id v
+evalExp (VarInc v)= evalVarOp (+1) v
+evalExp (VarDec v) = evalVarOp (subtract 1) v
 
-evalExp BTrue = return True
-evalExp BFalse = return False
-evalExp (Lt x y) = binOp (<) x y
-evalExp (Gt x y) = binOp (>) x y
-evalExp (And x y) = binOp (&&) x y
-evalExp (Or x y) = binOp (||) x y
-evalExp (Not x) = (evalExp x) >>= (return . (not))
-evalExp (Eq x y) = binOp (==) x y
-evalExp (NEq x y) = binOp (/=) x y 
--- evalExp (EAssgn s x)
--- evalExp (Eseq x y)
+-- Enteros
+evalExp (Const a) = evalConst a
+evalExp (UMinus x) = evalUnOp negate x
+evalExp (Plus x y) = evalBinOp (+) x y
+evalExp (Minus x y) = evalBinOp (-) x y
+evalExp (Times x y) = evalBinOp (*) x y
+-- Aqui es necesario chequear no dividir por 0
+evalExp (Div x y) = evalBinOpWithCheck checkDivByZero div x y
+
+-- Booleanos
+evalExp BTrue = evalConst True
+evalExp BFalse = evalConst False
+evalExp (Lt x y) = evalBinOp (<) x y
+evalExp (Gt x y) = evalBinOp (>) x y
+evalExp (And x y) = evalBinOp (&&) x y
+evalExp (Or x y) = evalBinOp (||) x y
+evalExp (Not x) = evalUnOp not x
+evalExp (Eq x y) = evalBinOp (==) x y
+evalExp (NEq x y) = evalBinOp (/=) x y
 
 
