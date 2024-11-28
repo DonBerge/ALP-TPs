@@ -45,13 +45,13 @@ $= < def.$ $App. >$\\
 $State (\lambda s \rightarrow let$ $(v$ :!: $s') = (a :!: s)$
 
 \hspace{45pt} $in$ $runState (k$ $v)$ $s')$\\
-$= <a=v$ y $a=s'>$\\
+$= <a=v$ y $s=s'>$\\
 $State (\lambda s \rightarrow let$ $(v$ :!: $s') = (a :!: s)$
 
 \hspace{45pt} $in$ $runState (k$ $a)$ $s)$\\
 $=<def. let>$\\
 $State (\lambda s \rightarrow runState (k$ $a)$ $s)$\\
-$= <def.$ $App.>$\\
+$= <def.$ $\eta - reduccion>$\\
 $State(runState (k$ $a))$\\
 $= <def.$ $runState.State = id>$\\
 $k$ $a$
@@ -80,7 +80,7 @@ $State (\lambda s \rightarrow  let$$(v$ :!: $s') = runState$ $m$ $s$
 \hspace{43pt} $in$ $(v$ :!: $s'))$\\
 $=<Prop.$ $let>$\\
 $State (\lambda s \rightarrow  runState$ $m$ $s)$\\
-$=<def.$ $App.>$\\
+$=<def.$ $\eta - reduccion>$\\
 $State (runState$ $m)$\\
 $=<def.$ $runState.State = id>$\\
 $m$
