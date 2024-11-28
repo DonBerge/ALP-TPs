@@ -70,29 +70,49 @@ stepComm (IfThenElse b c1 c2) = do p <- evalExp b
 stepComm (Repeat b c1) = do p <- evalExp b
                             if p then stepComm (Seq c1 (Repeat b c1))
                                  else stepComm Skip
-               
-binOp f e1 e2 = do
-                  v1 <- evalExp e1
-                  v2 <- evalExp e2
-                  return (f v1 v2)
 
 -- Evalua una expresion
-evalExp :: MonadState m => Exp a -> m a
-evalExp (Const a) = return a
-evalExp (Var x) = lookfor x
-evalExp (UMinus x) = (evalExp x) >>= (return . (negate))
-evalExp (Plus x y) = binOp (+) x y
-evalExp (Minus x y) = binOp (-) x y
-evalExp (Times x y) = binOp (*) x y
-evalExp (Div x y) = binOp (div) x y
+-- Adaptamos las funciones del tp1 para el evaluador monadico
 
-evalExp BTrue = return True
-evalExp BFalse = return False
-evalExp (Lt x y) = binOp (<) x y
-evalExp (Gt x y) = binOp (>) x y
-evalExp (And x y) = binOp (&&) x y
-evalExp (Or x y) = binOp (||) x y
-evalExp (Not x) = (evalExp x) >>= (return . (not))
-evalExp (Eq x y) = binOp (==) x y
-evalExp (NEq x y) = binOp (/=) x y
+when :: Applicative f => Bool -> f () -> f ()
+when p s  = if p then s else pure ()
+
+liftA2 :: Applicative f => (a->b->c) -> f a -> f b -> f c
+liftA2 f x = (<*>) (fmap f x)
+
+evalConst :: MonadState m => a -> m a
+evalConst = return
+
+evalUnOp :: MonadState m => (a->b) -> Exp a -> m b
+evalUnOp op = (fmap op) . evalExp
+
+evalBinOp :: MonadState m => (a->a->b) -> Exp a -> Exp a -> m b
+evalBinOp op x y = liftA2 op (evalExp x) (evalExp y)
+
+evalVarOp :: MonadState m => (Int->Int) -> Variable -> m Int
+evalVarOp op v = do {
+                  x <- lookfor v;
+                  x' <- return (op x);
+                  when (x/=x') (update v x');
+                  return x';
+                 }
+
+evalExp :: MonadState m => Exp a -> m a
+evalExp (Const a) = evalConst a
+evalExp (Var v) = evalVarOp id v
+evalExp (UMinus x) = evalUnOp negate x
+evalExp (Plus x y) = evalBinOp (+) x y
+evalExp (Minus x y) = evalBinOp (-) x y
+evalExp (Times x y) = evalBinOp (*) x y
+evalExp (Div x y) = evalBinOp (div) x y
+
+evalExp BTrue = evalConst True
+evalExp BFalse = evalConst False
+evalExp (Lt x y) = evalBinOp (<) x y
+evalExp (Gt x y) = evalBinOp (>) x y
+evalExp (And x y) = evalBinOp (&&) x y
+evalExp (Or x y) = evalBinOp (||) x y
+evalExp (Not x) = evalUnOp not x
+evalExp (Eq x y) = evalBinOp (==) x y
+evalExp (NEq x y) = evalBinOp (/=) x y
 
