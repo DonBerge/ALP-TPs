@@ -23,6 +23,10 @@ data Exp a where
   Not ::Exp Bool -> Exp Bool
   Eq ::Exp Int -> Exp Int -> Exp Bool
   NEq ::Exp Int -> Exp Int -> Exp Bool
+  VarInc :: Variable -> Exp Int
+  VarDec :: Variable -> Exp Int
+
+  -- Lo dejo porque sino no compila
   EAssgn ::Variable -> Exp Int -> Exp Int
   ESeq ::Exp Int -> Exp Int -> Exp Int
 

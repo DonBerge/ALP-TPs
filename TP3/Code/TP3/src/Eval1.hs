@@ -55,21 +55,19 @@ eval p = snd (runState (stepCommStar p) initEnv)
 -- Evalua multiples pasos de un comando, hasta alcanzar un Skip
 stepCommStar :: MonadState m => Comm -> m ()
 stepCommStar Skip = return ()
-stepCommStar c    = stepComm c >>= \c' -> stepCommStar c'
+stepCommStar c    = stepComm c >>= stepCommStar
 
 -- Evalua un paso de un comando
 stepComm :: MonadState m => Comm -> m Comm
 stepComm Skip = return Skip 
-stepComm (Let v x) = do e <- (evalExp x)
-                        update v e
-                        return Skip
+stepComm (Let v x) = evalExp x >>= update v >> return Skip
 stepComm (Seq c1 c2) = stepComm c1 >> stepComm c2 
 stepComm (IfThenElse b c1 c2) = do p <- evalExp b
                                    if p then stepComm c1
                                         else stepComm c2
-stepComm (Repeat b c1) = do p <- evalExp b
-                            if p then stepComm (Seq c1 (Repeat b c1))
-                                 else stepComm Skip
+stepComm c@(Repeat b c1) = do p <- evalExp b
+                              if p then stepComm c1 >> stepComm c 
+                                   else stepComm Skip
 
 -- Evalua una expresion
 -- Adaptamos las funciones del tp1 para el evaluador monadico
@@ -98,14 +96,20 @@ evalVarOp op v = do {
                  }
 
 evalExp :: MonadState m => Exp a -> m a
-evalExp (Const a) = evalConst a
+-- Operaciones con variables
 evalExp (Var v) = evalVarOp id v
+evalExp (VarInc v)= evalVarOp (+1) v
+evalExp (VarDec v) = evalVarOp (subtract 1) v
+
+-- Enteros
+evalExp (Const a) = evalConst a
 evalExp (UMinus x) = evalUnOp negate x
 evalExp (Plus x y) = evalBinOp (+) x y
 evalExp (Minus x y) = evalBinOp (-) x y
 evalExp (Times x y) = evalBinOp (*) x y
 evalExp (Div x y) = evalBinOp (div) x y
 
+-- Booleanos
 evalExp BTrue = evalConst True
 evalExp BFalse = evalConst False
 evalExp (Lt x y) = evalBinOp (<) x y
