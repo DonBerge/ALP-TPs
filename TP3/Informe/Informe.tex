@@ -1,0 +1,173 @@
+\documentclass[12pt, titlepage]{article}
+\usepackage{prftree}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{enumitem} 
+
+
+\title{Trabajo Práctico 3\\ 
+Análisis de Lenguajes de Programación}
+\author{Agustín Fernández Bergé y Ramiro Gatto\\ Legajos: F-3726/5 y G-5803/3}
+\date{03/12/2024}
+
+\begin{document}
+\maketitle
+
+\section*{Ejercicio 1.a}
+\noindent{Dada la siguienete monada State:}
+
+\noindent $instance$ $Monad$ $State$ $where$
+
+\hspace{15pt}$return$ $x = State (\lambda s \rightarrow (x$ :!: $s))$
+
+\hspace{15pt}$m >>= f = State (\lambda s \rightarrow let$ $(v$ :!: $s') = runState$ $m$ $s$
+
+\hspace{145pt}$in$ $runState (f$ $v)$ $s')$
+
+\noindent{Hay qur probamos que en efecto es una monada, para esto debemos probar las tres leyes de monada.}
+
+\subsection*{Monad.1}
+Debemos probamos que: $return$ $s >>= k = k$ $a$\\
+Demostración:\\
+$return$ $a >>= k$\\
+$= <def.$ $return >$\\
+$State (\lambda s \rightarrow  (a$ :!: $s)) >>= k$ \\
+$= < def. >>= >$\\
+$State (\lambda s \rightarrow$ 
+$let$ $(v$ :!: $s') = runState (State (\lambda s'' \rightarrow (a $ :!: $ s'')))$ $s$
+
+\hspace{45pt} $in$ $runState$ $(k$ $v)$ $s')$\\
+$=< def.$ $runState.State = id >$ \\
+$State (\lambda s \rightarrow let$ $(v$ :!: $s') = (\lambda s'' \rightarrow  (a$ :!: $s'')) s$
+
+\hspace{45pt} $in$ $runState (k$ $v)$ $s')$\\
+$= < def.$ $App. >$\\
+$State (\lambda s \rightarrow let$ $(v$ :!: $s') = (a :!: s)$
+
+\hspace{45pt} $in$ $runState (k$ $v)$ $s')$\\
+$= <a=v$ y $a=s'>$\\
+$State (\lambda s \rightarrow let$ $(v$ :!: $s') = (a :!: s)$
+
+\hspace{45pt} $in$ $runState (k$ $a)$ $s)$\\
+$=<def. let>$\\
+$State (\lambda s \rightarrow runState (k$ $a)$ $s)$\\
+$= <def.$ $App.>$\\
+$State(runState (k$ $a))$\\
+$= <def.$ $runState.State = id>$\\
+$k$ $a$
+
+%%===========================
+\newpage
+\subsection*{Monad.2}
+Debemos probamos que: $m >>= return = m$\\
+Demostración:\\
+$m >>= return$\\
+$= <def. >>=>$\\
+$State (\lambda s \rightarrow  let$ $(v$ :!: $s') = runState$ $m$ $s$
+
+\hspace{45pt} $in$ $runState (return$ $v)$ $s')$\\
+$=<def.$ $return>$\\
+$State (\lambda s \rightarrow  let$ $(v$ :!: $s') = runState$ $m$ $s$
+
+\hspace{45pt} $in$ $runState (State (\lambda s'' \rightarrow(v$ :!: $s'')))$ $s')$\\
+$=<def.$ $runState.State = id>$\\
+$State (\lambda s \rightarrow  let$ $(v$ :!: $s') = runState$ $m$ $s$
+ 	    
+\hspace{45pt}$in$ $(\lambda s'' \rightarrow (v$ :!: $s''))$ $s')$\\
+$=<def.$ $App.>$\\
+$State (\lambda s \rightarrow  let$$(v$ :!: $s') = runState$ $m$ $s$
+ 	   
+\hspace{43pt} $in$ $(v$ :!: $s'))$\\
+$=<Prop.$ $let>$\\
+$State (\lambda s \rightarrow  runState$ $m$ $s)$\\
+$=<def.$ $App.>$\\
+$State (runState$ $m)$\\
+$=<def.$ $runState.State = id>$\\
+$m$
+
+%=============================
+\newpage
+\subsection*{Monad.3}
+Debemos probar que: $(m >>= k) >>= h = m >>= (\lambda x \rightarrow k x >>= h )$\\
+Demostración:\\
+
+\noindent I) Primera mitad:\\
+$(m >>= k) >>= h$\\
+$=<def. >>=>$\\
+$State (\lambda s1 \rightarrow  let$ $(v1$ :!: $s1') = runState$ $m$ $s1$
+ 	    
+\hspace{45pt} $in$ $runState (k$ $v1)$ $s1') >>= h$\\
+$=<def. >>=>$\\
+$State (\lambda s$$\rightarrow$$let$ $(v$:!:$s')$$=
+$$runState(State (\lambda s1$$\rightarrow$$let$ $(v1$:!:$s1') = runState$ $m$ $s1$
+
+\hspace{210pt} $in$ $runState (k$ $v1)$ $s1'))$ $s$
+
+\hspace{40pt}$in$ $runState (h$ $v)$ $s')$\\
+$=<def.$ $runState.State = id>$\\
+$State (\lambda s$$\rightarrow$$let$ $(v$:!:$s')$$=
+$$(\lambda s1$$\rightarrow$$let$ $(v1$:!:$s1') = runState$ $m$ $s1$
+
+\hspace{130pt} $in$ $runState (k$ $v1)$ $s1')$ $s$
+
+\hspace{40pt}$in$ $runState (h$ $v)$ $s')$\\
+$=<def.$ $App.>$\\
+$State (\lambda s \rightarrow let$ $(v :!: s') = (let (v1 :!: s1') = runState$ $m$ $s$
+
+\hspace{215pt}$in$ $runState (k$ $v1)$ $s1')$
+
+\hspace{48pt}$in$ $runState (h$ $v)$ $s')$\\
+$=<Prop.$ $Let>$\\
+$State (\lambda s \rightarrow let$ $(v1$ :!: $s1') = runState$ $m$ $s$
+
+\hspace{62pt}$(v :!: s') = runState (k$ $v1)$ $s1'$
+
+\hspace{45pt}$in$ $runState (h$ $v)$ $s')$\\
+
+
+\noindent II) Segunda mitad:\\
+$m >>= (\lambda x \rightarrow k$ $x >>= h )$\\
+$=<def.$ $>>=>$\\
+$State (\lambda s \rightarrow let$ $(v1$ :!: $s1') = runState$ $m$ $s$
+
+\hspace{45pt} $in$ $runState ((\lambda x \rightarrow k x >>= h ) v) s')$\\
+$=<def.$ $App>$\\
+$State (\lambda s \rightarrow let (v1$ :!: $s1') = runState$ $m$ $s$
+
+\hspace{40pt}$in$ $runState (k$ $v >>= h )$ $s')$\\
+$=<def.$ $>>=>$\\
+\newpage
+\noindent $State (\lambda s \rightarrow let (v1$ :!: $s1') = runState$ $m$ $s$
+
+\hspace{43pt}$in$ $runState ( State (\lambda s'' \rightarrow let$ $(v$ :!: $s') = runState$ $(k$ $v)$ $s''$
+
+\hspace{175pt} $in$ $runState (h$ $v)$ $s')$
+
+\hspace{101pt} $)$ $s1')$\\
+$=<def.$ $runState.State = id>$\\
+$State (\lambda s \rightarrow let$ $(v1$ :!: $s1') = runState$ $m$ $s$
+
+\hspace{45pt}$in (\lambda s'' \rightarrow let$ $(v$ :!: $s') = runState$ $(k$ $v)$ $s''$
+
+\hspace{92pt} $in$ $runState$ $(h$ $v)$ $s')$
+
+\hspace{50pt} $s1')$\\
+$=<def.$ $App.>$\\
+$State (\lambda s \rightarrow let$ $(v1$ :!: $s1') = runState$ $m$ $s$
+
+\hspace{43pt} $in$ $let$ $(v$ $:!:$ $s') = runState$ $(k$ $v)$ $s1'$
+
+\hspace{56pt} $in$ $runState$ $(h$ $v)$ $s')$\\
+
+$=<def.$ $Let>$\\
+$State (\lambda s \rightarrow let$ $(v1$ :!: $s1') = runState$ $m$ $s$
+
+\hspace{63pt}$(v$ :!: $s') = runState$ $(k$ $v)$ $s1$
+
+\hspace{47pt}$in$ $runState$ $(h$ $v)$ s'$)$\\
+
+\noindent De I y II se tiene que vale: $(m >>= k) >>= h = m >>= (\lambda x \rightarrow k x >>= h )$\
+
+\subsection*{Conclusion}
+Como se cumple, monad.1, monad.2 y monad.3, tenemos que en efecto es una monada
+\end{document}
