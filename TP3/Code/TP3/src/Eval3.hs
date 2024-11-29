@@ -47,42 +47,57 @@ instance Monad StateErrorTrace where
                                         Right (a,e') -> let
                                                           (st', t') = runStateErrorTrace (f a) e'
                                                         in
-                                                          (st', if t=="" then t' else if t'=="" then t else t++", "++t') 
+                                                          -- Por eficiencia meto las trazas al reves y las doy vuelta al terminar la ejecucion
+                                                          (
+                                                            st', if t=="" 
+                                                                  then t' 
+                                                                  else if t'=="" 
+                                                                    then t 
+                                                                    else t' ++" ,"++ t
+                                                          ) 
                               )
                                     
 -- Ejercicio 3.c: Dar una instancia de MonadTrace para StateErrorTrace.
-instance MonadTrace StateErrorTrace where 
-  addTrace s = StateErrorTrace (\e -> (return ((),e),s))
 
+-- Añade una traza a la ejecucion
+-- Las trazas se agregan al reves por eficiencia, al final de la evaluacion se invierten
+instance MonadTrace StateErrorTrace where 
+  addTrace s = StateErrorTrace (\e -> (return ((),e),reverse s))
 
 -- Ejercicio 3.d: Dar una instancia de MonadError para StateErrorTrace.
-instance MonadError StateErrorTrace where
-  throw e = StateErrorTrace (const (Left e, "throw " ++ show e))
 
+-- Devuelve el error sin agregar la traza
+throw':: Error -> StateErrorTrace a
+throw' e = StateErrorTrace (const (Left e, ""))
+
+instance MonadError StateErrorTrace where
+  throw e = addTrace ("throw" ++ show e) >> throw' e
 
 -- Ejercicio 3.e: Dar una instancia de MonadState para StateErrorTrace.
 instance MonadState StateErrorTrace where
-  lookfor v = StateErrorTrace (\s -> case lookfor' v s of
-                                      Nothing -> (Left UndefVar, "throw UndefVar " ++ v)
-                                      Just x' -> (Right (x',s), ""))
-    where lookfor' = M.lookup
-  update v i = StateErrorTrace (\s -> (return ((), update' v i s), unwords [v,"<--",show i])) 
-    where update' = M.insert
+  lookfor v = StateErrorTrace (\s -> runStateErrorTrace (lookfor' v s) s)
+    where lookfor' v s = case M.lookup v s of
+                          Nothing -> addTrace ("throw UndefVar " ++ v) >> throw' UndefVar
+                          Just x' -> return x'
+  update v i = addTrace (unwords [v,"<--",show i]) >> update' v i
+    where update' v i = StateErrorTrace (\s -> (Right ((), M.insert v i s), "")) 
 
 -- Ejercicio 3.f: Implementar el evaluador utilizando la monada StateErrorTrace.
+
 -- Evalua un programa en el estado nulo
-
-
+-- Si no hay errores se devuelve el estado al final del programa
+-- Tambien se devuelve la traza de ejecución, como la misma se guardo al reves,
+-- hay que darla devuelta
 eval :: Comm -> (Either Error Env, Trace)
 eval p = let
             (st, t) = runStateErrorTrace (stepCommStar p) initEnv
          in case st of
-            Left e -> (Left e, t)
-            Right (_,e) -> (return e, t)
+            Left e -> (Left e, reverse t)
+            Right (_,e) -> (return e, reverse t)
 
 
 -- Evalua multiples pasos de un comando, hasta alcanzar un Skip
--- stepCommStar :: [dar el tipo segun corresponda]
+stepCommStar :: (MonadState m, MonadError m, MonadTrace m) => Comm -> m ()
 stepCommStar Skip = return ()
 stepCommStar c    = stepComm c >>= stepCommStar
 
@@ -92,32 +107,31 @@ stepComm :: (MonadState m, MonadError m, MonadTrace m) => Comm -> m Comm
 stepComm Skip = return Skip 
 stepComm (Let v x) = evalExp x >>= update v >> return Skip
 stepComm (Seq c1 c2) = stepComm c1 >> stepComm c2 
-
-
 stepComm (IfThenElse b c1 c2) = do p <- evalExp b
-                                   if p then do
-                                              addTrace "if-true"
-                                              stepComm c1
-                                        else do
-                                              addTrace "if-false" 
-                                              stepComm c2
-stepComm c@(Repeat b c1) = do p <- evalExp b
-                              if p then do
-                                          addTrace "repeat"
-                                          stepComm c1 >> stepComm c 
-                                   else do
-                                          addTrace "repeat-exit" 
-                                          stepComm Skip
+                                   if p then addTrace "if-true"  >> stepComm c1
+                                        else addTrace "if-false" >> stepComm c2
+stepComm r@(Repeat b c) = do p <- evalExp b
+                             if p then addTrace "repeat" >> stepComm c >> stepComm r 
+                                  else addTrace "repeat-exit" >> stepComm Skip
 
 
 -- Evalua una expresion
 
+-- Si el predicado es verdadero ejecuta la expresion s, sino no ejecuta nada
 when :: Applicative f => Bool -> f () -> f ()
 when p s  = if p then s else pure ()
 
+-- Evalua a una expresion constante
 evalConst :: (MonadState m, MonadError m, MonadTrace m) => a -> m a
 evalConst = return
 
+{-
+  op: Operacion a realizar
+  showOp: Represntacion de la operacion como string
+  x: Expresion sobre la que se realiza la operacion
+
+  Evalua una operacion unaria sobre una expresion dada, actualizando la traza de ejecucion y capturando errores si los hay.
+-}
 evalUnOp :: (MonadState m, MonadError m, MonadTrace m, Show a, Show b) => (a->b) -> String -> Exp a -> m b
 evalUnOp op showOp x = do
                         x' <- evalExp x
@@ -126,14 +140,29 @@ evalUnOp op showOp x = do
                         return x''
 
 
+-- Funcion que chequea una condicion sobre 2 valores
 type Check a m = a -> a -> m ()
 
+-- Chequea que no se realize una division por 0, devolviendo un error si ocurre
 checkDivByZero :: (MonadError m, MonadTrace m) => Check Int m
 checkDivByZero x y = when (y==0) (addTrace (show x ++ " / " ++ show y) >> throw DivByZero)
 
+-- No realiza ningun chequeo
 noCheck :: Applicative m => Check a m
 noCheck _ _ = pure ()
 
+{-
+  check: Esta funcion chequea una condicion sobre la evaluacion de x e y, realizando efectos si se cumple o no.
+  Por ejemplo, se puede chequear que y no sea 0 al hacer una division.
+
+  op: Operacion binaria a realizar
+  showOp: Representacion de op como string
+
+  x,y: Dos expresiones sobre las que se realiza una expresion luego de evaluarlas
+
+  Evalua dos expresiones, realiza un chequeo sobre ellas, actualiza la traza de ejecucion y devuelve el resultado de realizar op
+  sobre los valores obtenidos de las expresiones.
+-}
 evalBinOpWithCheck :: (MonadState m, MonadError m, MonadTrace m, Show a, Show b) => Check a m -> (a->a->b) -> String -> Exp a -> Exp a -> m b
 evalBinOpWithCheck check op showOp x y = do
                                           x' <- evalExp x
@@ -143,9 +172,15 @@ evalBinOpWithCheck check op showOp x y = do
                                           addTrace (unwords [show x',showOp,show y',"-->",show z])
                                           return z
 
+{-
+  Igual que evalBinOpWithCheck, pero no realiza un chequeo
+-}
 evalBinOp :: (MonadState m, MonadError m, MonadTrace m, Show a, Show b) => (a->a->b) -> String -> Exp a -> Exp a -> m b
 evalBinOp = evalBinOpWithCheck noCheck
 
+{- 
+  Evalua una operacion unaria sobre una variable entera, actualizando el estado de esa variable y la traza de ejecución
+-}
 evalVarOp :: (MonadState m, MonadError m, MonadTrace m) => (Int->Int) -> String -> Variable -> m Int
 evalVarOp op showOp v = do {
                           x <- lookfor v;
@@ -155,6 +190,7 @@ evalVarOp op showOp v = do {
                           return x';
                         }
 
+-- Evalua una expresion
 evalExp :: (MonadState m, MonadError m, MonadTrace m) => Exp a -> m a
 -- Operaciones con variables
 evalExp (Var v) = evalVarOp id "" v
