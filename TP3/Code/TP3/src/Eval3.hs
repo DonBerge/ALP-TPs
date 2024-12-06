@@ -8,12 +8,10 @@ import           AST
 import           Monads
 import qualified Data.Map.Strict               as M
 import           Data.Maybe
-import           Data.Strict.Tuple
+--import           Data.Strict.Tuple
 import           Control.Monad                  ( liftM
                                                 , ap
                                                 )
-import Prelude hiding (fst,snd)
-
 
 -- Entornos
 type Env = M.Map Variable Int
@@ -98,11 +96,7 @@ eval p = let
             (st, t) = runStateErrorTrace (stepCommStar p) initEnv
             -- Doy vuelta la traza
             t' = reverse t
-         in case st of
-            -- Hubo un error, lo devuelvo junto con la traza
-            Left e -> (Left e, t')
-            -- Obtengo el estado final y lo devuelvo junto a la traza
-            Right (_,e) -> (return e, t')
+         in (st >>= return . snd, t')
 
 
 -- Evalua multiples pasos de un comando, hasta alcanzar un Skip
@@ -124,7 +118,7 @@ stepComm r@(Repeat b c) = do p <- evalExp b
                                   else addTrace "repeat-exit" >> stepComm Skip
 
 
--- Evalua una expresion
+-- Evaluacion de expresiones
 
 -- Si el predicado es verdadero ejecuta la expresion s, sino no ejecuta nada
 -- Inspirada en la funcion homonima de Control.Monad
