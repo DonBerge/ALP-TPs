@@ -81,6 +81,7 @@ stepComm c@(Repeat b c1) = do p <- evalExp b
 
 
 -- Evaluacion de expresiones
+-- Adaptamos las funciones del tp1 para el evaluador monadico
 
 -- Si el predicado es verdadero ejecuta la expresion s, sino no ejecuta nada
 -- Inspirada en la funcion homonima de Control.Monad

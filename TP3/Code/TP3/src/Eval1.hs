@@ -69,30 +69,39 @@ stepComm c@(Repeat b c1) = do p <- evalExp b
                               if p then stepComm c1 >> stepComm c 
                                    else stepComm Skip
 
--- Evalua una expresion
+
+-- Evaluacion de expresiones
 -- Adaptamos las funciones del tp1 para el evaluador monadico
 
+-- Si el predicado es verdadero ejecuta la expresion s, sino no ejecuta nada
+-- Inspirada en la funcion homonima de Control.Monad
 when :: Applicative f => Bool -> f () -> f ()
 when p s  = if p then s else pure ()
 
+-- Aplica una funcion binaria a dos valores monadicos
+-- Inspirada en la funcion homonima de Control.Applicative
 liftA2 :: Applicative f => (a->b->c) -> f a -> f b -> f c
 liftA2 f x = (<*>) (fmap f x)
 
+-- Evalua a una expresion constante
 evalConst :: MonadState m => a -> m a
 evalConst = return
 
+-- Toma una operacion unaria y una expresion y evalua la operacion sobre la expresion
 evalUnOp :: MonadState m => (a->b) -> Exp a -> m b
 evalUnOp op = (fmap op) . evalExp
 
+-- Toma una operacion binaria y dos expresiones y evalua la operacion sobre las expresiones
 evalBinOp :: MonadState m => (a->a->b) -> Exp a -> Exp a -> m b
 evalBinOp op x y = liftA2 op (evalExp x) (evalExp y)
 
+-- Evalua una operacion unaria sobre una variable entera, actualizando el estado de esa variable
 evalVarOp :: MonadState m => (Int->Int) -> Variable -> m Int
 evalVarOp op v = do {
                   x <- lookfor v;
-                  x' <- return (op x);
-                  when (x/=x') (update v x');
-                  return x';
+                  let x' = op x in do
+                    when (x/=x') (update v x');
+                    return x';
                  }
 
 evalExp :: MonadState m => Exp a -> m a
