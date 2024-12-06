@@ -77,23 +77,32 @@ instance MonadError StateErrorTrace where
 instance MonadState StateErrorTrace where
   lookfor v = StateErrorTrace (\s -> runStateErrorTrace (lookfor' v s) s)
     where lookfor' v s = case M.lookup v s of
-                          Nothing -> addTrace ("throw UndefVar " ++ v) >> throw' UndefVar
+                          Nothing -> addTrace (v ++ " --> ???") >> addTrace ("throw UndefVar " ++ v) >> throw' UndefVar
                           Just x' -> return x'
+
+  -- unwords: toma una lista de strings y devuelve un nuevo string con los elementos de la lista separados por espacios
+  -- Agrega una traza de actualizacion de una variable y actualiza el estado
   update v i = addTrace (unwords [v,"<--",show i]) >> update' v i
-    where update' v i = StateErrorTrace (\s -> (Right ((), M.insert v i s), "")) 
+    where 
+      -- Actualiza el estado con el nuevo valor de la variable
+      update' v i = StateErrorTrace (\s -> (Right ((), M.insert v i s), "")) 
 
 -- Ejercicio 3.f: Implementar el evaluador utilizando la monada StateErrorTrace.
 
 -- Evalua un programa en el estado nulo
 -- Si no hay errores se devuelve el estado al final del programa
 -- Tambien se devuelve la traza de ejecución, como la misma se guardo al reves,
--- hay que darla devuelta
+-- hay que darla vuelta
 eval :: Comm -> (Either Error Env, Trace)
 eval p = let
             (st, t) = runStateErrorTrace (stepCommStar p) initEnv
+            -- Doy vuelta la traza
+            t' = reverse t
          in case st of
-            Left e -> (Left e, reverse t)
-            Right (_,e) -> (return e, reverse t)
+            -- Hubo un error, lo devuelvo junto con la traza
+            Left e -> (Left e, t')
+            -- Obtengo el estado final y lo devuelvo junto a la traza
+            Right (_,e) -> (return e, t')
 
 
 -- Evalua multiples pasos de un comando, hasta alcanzar un Skip
@@ -111,13 +120,14 @@ stepComm (IfThenElse b c1 c2) = do p <- evalExp b
                                    if p then addTrace "if-true"  >> stepComm c1
                                         else addTrace "if-false" >> stepComm c2
 stepComm r@(Repeat b c) = do p <- evalExp b
-                             if p then addTrace "repeat" >> stepComm c >> stepComm r 
+                             if p then addTrace "repeat-loop" >> stepComm c >> stepComm r 
                                   else addTrace "repeat-exit" >> stepComm Skip
 
 
 -- Evalua una expresion
 
 -- Si el predicado es verdadero ejecuta la expresion s, sino no ejecuta nada
+-- Inspirada en la funcion homonima de Control.Monad
 when :: Applicative f => Bool -> f () -> f ()
 when p s  = if p then s else pure ()
 
@@ -135,9 +145,9 @@ evalConst = return
 evalUnOp :: (MonadState m, MonadError m, MonadTrace m, Show a, Show b) => (a->b) -> String -> Exp a -> m b
 evalUnOp op showOp x = do
                         x' <- evalExp x
-                        x'' <- return (op x')
-                        addTrace (unwords [showOp ++ show x',"-->",show x''])
-                        return x''
+                        let x'' = op x' in do
+                          addTrace (unwords [showOp ++ "(" ++ show x' ++ ")","-->",show x''])
+                          return x''
 
 
 -- Funcion que chequea una condicion sobre 2 valores
@@ -167,10 +177,10 @@ evalBinOpWithCheck :: (MonadState m, MonadError m, MonadTrace m, Show a, Show b)
 evalBinOpWithCheck check op showOp x y = do
                                           x' <- evalExp x
                                           y' <- evalExp y
-                                          z <- return (x' `op` y')
                                           check x' y'
-                                          addTrace (unwords [show x',showOp,show y',"-->",show z])
-                                          return z
+                                          let z = x' `op` y' in do
+                                            addTrace (unwords [show x',showOp,show y',"-->",show z])
+                                            return z
 
 {-
   Igual que evalBinOpWithCheck, pero no realiza un chequeo
@@ -184,10 +194,10 @@ evalBinOp = evalBinOpWithCheck noCheck
 evalVarOp :: (MonadState m, MonadError m, MonadTrace m) => (Int->Int) -> String -> Variable -> m Int
 evalVarOp op showOp v = do {
                           x <- lookfor v;
-                          x' <- return (op x);
-                          addTrace (unwords [v++showOp,"-->",show x']);
-                          when (x/=x') (update v x');
-                          return x';
+                          let x' = op x in do
+                            addTrace (unwords [v++showOp,"-->",show x']);
+                            when (x/=x') (update v x');
+                            return x';
                         }
 
 -- Evalua una expresion

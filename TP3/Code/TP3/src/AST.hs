@@ -23,6 +23,9 @@ data Exp a where
   Not ::Exp Bool -> Exp Bool
   Eq ::Exp Int -> Exp Int -> Exp Bool
   NEq ::Exp Int -> Exp Int -> Exp Bool
+
+  -- No es requerido, pero ya lo habiamos implementado asi que
+  -- para no borrarlo lo dejamos
   VarInc :: Variable -> Exp Int
   VarDec :: Variable -> Exp Int
 
